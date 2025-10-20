@@ -1,6 +1,6 @@
 #include "../include/lib.h"
 
-std::string claudeHash(const std::string &input)
+std::string hash(const std::string &input)
 {
     std::array<unsigned int, 16> hash{0};
     std::stringstream finalHash;
