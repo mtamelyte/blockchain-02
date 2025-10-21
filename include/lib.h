@@ -3,4 +3,5 @@
 #include "../user/User.h"
 
 std::string hash(const std::string &input);
-std::vector<User> generateUsers(double userAmount = 1000);
+std::vector<User> generateUsers(double userAmount);
+std::string generateSalt();
