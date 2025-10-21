@@ -2,9 +2,9 @@
 
 User::User(std::string name, std::string publicKey, double balance)
 {
-    this.name = name;
-    this.publicKey = publicKey;
-    this.balance = balance;
+    this->name = name;
+    this->publicKey = publicKey;
+    this->balance = balance;
 }
 
 void User::setName(std::string name)

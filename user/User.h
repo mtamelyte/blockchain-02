@@ -1,15 +1,16 @@
 #ifndef USER_H
 #define USER_H
 
-#include "../include/lib.h"
+#include <string>
 
-class User{
-    private:
+class User
+{
+private:
     std::string name;
     std::string publicKey;
     double balance;
 
-    public:
+public:
     User(std::string name, std::string publicKey, double balance);
 
     void setName(std::string name);
@@ -20,6 +21,6 @@ class User{
 
     void setBalance(double balance);
     double getBalance() const;
-}
+};
 
 #endif
