@@ -1,16 +1,11 @@
 #ifndef USER_H
 #define USER_H
 
-#include <string>
+#include "../include/utxo.h"
 #include <vector>
 class User
 {
 private:
-    struct UTXO
-    {
-        std::string id;
-        double amount;
-    };
     std::string name;
     std::string publicKey;
     double balance;
@@ -30,6 +25,7 @@ public:
 
     void addUTXO(double amount);
     void removeUTXO(std::string id);
+    std::vector<UTXO> getUTXOs();
 };
 
 #endif

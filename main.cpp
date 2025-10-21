@@ -2,7 +2,8 @@
 
 int main()
 {
-    int amountOfUsers = 1000;
+    int amountOfUsers = 2;
+    int amountOfTransactions = 1;
     std::vector<User> users = generateUsers(amountOfUsers);
-    //  std::vector<Transaction> transactions = generateTransactions(users);
+    std::vector<Transaction> transactions = generateTransactions(amountOfTransactions, users);
 }

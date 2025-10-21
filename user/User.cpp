@@ -56,14 +56,20 @@ void User::addUTXO(double amount)
 
 void User::removeUTXO(std::string id)
 {
-    std::vector<UTXO>::iterator it;
+    std::vector<UTXO>::iterator it = utxos.begin();
     for (auto utxo : utxos)
     {
         if (utxo.id == id)
         {
-            *it = utxo;
+            this->balance -= utxo.amount;
             break;
         }
+        it++;
     }
     utxos.erase(it);
+}
+
+std::vector<UTXO> User::getUTXOs()
+{
+    return this->utxos;
 }
