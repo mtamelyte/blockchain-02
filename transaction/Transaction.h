@@ -13,6 +13,8 @@ private:
 
 public:
     Transaction(std::string transactionId, std::string senderId, std::string receiverId, double amount);
+
+    std::string getTransactionId();
 };
 
 #endif

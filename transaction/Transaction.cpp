@@ -7,3 +7,8 @@ Transaction::Transaction(std::string transactionId, std::string senderId, std::s
     this->receiverId = receiverId;
     this->amount = amount;
 }
+
+std::string Transaction::getTransactionId()
+{
+    return this->transactionId;
+}

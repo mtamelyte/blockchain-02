@@ -1,4 +1,5 @@
 #include "include/lib.h"
+#include <ranges>
 
 std::string generateSalt()
 {
@@ -113,6 +114,7 @@ std::vector<Transaction> generateTransactions(int txAmount, std::vector<User> &u
         // create transaction id - a hash of all other data
         std::string idPreHash = sender.getPublicKey() + receiver.getPublicKey() + std::to_string(amountToTransfer);
         std::string txId = hash(idPreHash);
+        std::cout << txId << std::endl;
 
         // construct a transaction with all the generated data and add it to the list
         Transaction tx(txId, sender.getPublicKey(), receiver.getPublicKey(), amountToTransfer);
@@ -126,4 +128,49 @@ std::vector<Transaction> generateTransactions(int txAmount, std::vector<User> &u
     }
 
     return transactions;
+}
+
+Block mineBlock(std::string previousBlockHash, std::string merkleRootHash)
+{
+    int nonce = 0;
+    std::string difficulty = "000";
+    while (true)
+    {
+        Block newBlock(previousBlockHash, merkleRootHash, nonce++, 3);
+        std::string hash = newBlock.calculateBlockHash();
+        std::cout << hash << std::endl;
+        if (hash.substr(0, 3) == difficulty)
+        {
+            return newBlock;
+            break;
+        }
+    }
+}
+
+void createBlockchain(std::vector<Transaction> &transactions, int blockSize)
+{
+    std::mt19937 mt(static_cast<long unsigned int>(std::chrono::high_resolution_clock::now().time_since_epoch().count()));
+    std::shuffle(transactions.begin(), transactions.end(), mt);
+    std::vector<Transaction> txToBlock;
+    std::string allTransactionsToHash = "";
+    std::list<Block> blockchain;
+
+    while (!transactions.empty())
+    {
+        int txSize = transactions.size();
+        for (int i = txSize - 1; i >= (txSize - (blockSize)) && !transactions.empty(); i--)
+        {
+            txToBlock.push_back(transactions[i]);
+            allTransactionsToHash += transactions[i].getTransactionId();
+            transactions.pop_back();
+        }
+        std::string previousBlockHash;
+        if (blockchain.empty())
+            previousBlockHash.append(64, '0');
+        else
+            previousBlockHash = blockchain.back().getBlockHash();
+        Block newBlock = mineBlock(previousBlockHash, hash(allTransactionsToHash));
+        newBlock.setTransactions(txToBlock);
+        blockchain.push_back(newBlock);
+    }
 }

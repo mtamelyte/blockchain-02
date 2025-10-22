@@ -8,3 +8,4 @@ std::string hash(const std::string &input);
 std::vector<User> generateUsers(double userAmount);
 std::vector<Transaction> generateTransactions(int txAmount, std::vector<User> &users);
 std::string generateSalt();
+void createBlockchain(std::vector<Transaction> &transactions, int blockSize);
