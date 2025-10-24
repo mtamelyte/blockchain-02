@@ -2,9 +2,11 @@
 
 int main()
 {
-    int amountOfUsers = 2;
-    int amountOfTransactions = 10;
+    const int amountOfUsers = 1000;
+    const int amountOfTransactions = 10000;
+    const int transactionsInBlock = 100;
+    const int difficulty = 3;
     std::vector<User> users = generateUsers(amountOfUsers);
     std::vector<Transaction> transactions = generateTransactions(amountOfTransactions, users);
-    createBlockchain(transactions, 2);
+    createBlockchain(transactions, transactionsInBlock, difficulty);
 }

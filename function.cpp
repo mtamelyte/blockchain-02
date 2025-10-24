@@ -16,7 +16,7 @@ std::string generateSalt()
     return salt;
 }
 
-std::vector<User> generateUsers(double userAmount)
+std::vector<User> generateUsers(const int userAmount)
 {
     std::vector<User> users;
     for (int i = 1; i <= userAmount; i++)
@@ -45,12 +45,12 @@ std::vector<User> generateUsers(double userAmount)
     return users;
 }
 
-std::vector<Transaction> generateTransactions(int txAmount, std::vector<User> &users)
+std::vector<Transaction> generateTransactions(const int txAmount, std::vector<User> &users)
 {
     std::vector<Transaction> transactions;
 
     std::mt19937 mt(static_cast<long unsigned int>(std::chrono::high_resolution_clock::now().time_since_epoch().count()));
-    std::uniform_int_distribution<> num(0, 1);
+    std::uniform_int_distribution<> num(0, 999);
     std::uniform_int_distribution<> amt(1, 5000);
 
     for (int i = 0; i < txAmount; i++)
@@ -59,16 +59,17 @@ std::vector<Transaction> generateTransactions(int txAmount, std::vector<User> &u
         int senderIt = num(mt);
         int receiverIt = num(mt);
 
-        // ensure the sender and the receiver aren't the same person
-        while (senderIt == receiverIt) // ensure the sender and the receiver aren't the same person
+        // ensure the sender and the receiver aren't the same person and the sender has money they can transfer
+        while (senderIt == receiverIt || users[senderIt].getBalance() == 0)
         {
-            // if they are, regenerate the receiver
-            receiverIt = num(mt);
+            // if they are, regenerate the sender
+            senderIt = num(mt);
         }
 
         // get the sender and receiver as objects
         User sender = users[senderIt];
         User receiver = users[receiverIt];
+        std::cout << sender.getName() << ": " << sender.getBalance() << " " << receiver.getName() << ": " << receiver.getBalance() << std::endl;
 
         // randomly generate an amount to transfer
         double amountToTransfer = amt(mt);
@@ -114,7 +115,6 @@ std::vector<Transaction> generateTransactions(int txAmount, std::vector<User> &u
         // create transaction id - a hash of all other data
         std::string idPreHash = sender.getPublicKey() + receiver.getPublicKey() + std::to_string(amountToTransfer);
         std::string txId = hash(idPreHash);
-        std::cout << txId << std::endl;
 
         // construct a transaction with all the generated data and add it to the list
         Transaction tx(txId, sender.getPublicKey(), receiver.getPublicKey(), amountToTransfer);
@@ -124,22 +124,26 @@ std::vector<Transaction> generateTransactions(int txAmount, std::vector<User> &u
         users[senderIt] = sender;
         users[receiverIt] = receiver;
 
+        std::cout << i << std::endl;
         std::cout << "Siuntėjas: " << sender.getName() << ", gavėjas: " << receiver.getName() << ". Pervesta " << amountToTransfer << std::endl;
+        std::cout << sender.getName() << ": " << sender.getBalance() << " " << receiver.getName() << ": " << receiver.getBalance() << std::endl;
+        std::cout << std::endl;
     }
 
     return transactions;
 }
 
-Block mineBlock(std::string previousBlockHash, std::string merkleRootHash)
+Block mineBlock(std::string previousBlockHash, std::string merkleRootHash, int difficulty)
 {
     int nonce = 0;
-    std::string difficulty = "000";
+    std::string diff = "";
+    diff.append(difficulty, '0');
     while (true)
     {
-        Block newBlock(previousBlockHash, merkleRootHash, nonce++, 3);
+        Block newBlock(previousBlockHash, merkleRootHash, nonce++, difficulty);
         std::string hash = newBlock.calculateBlockHash();
         std::cout << hash << std::endl;
-        if (hash.substr(0, 3) == difficulty)
+        if (hash.substr(0, 3) == diff)
         {
             return newBlock;
             break;
@@ -147,16 +151,16 @@ Block mineBlock(std::string previousBlockHash, std::string merkleRootHash)
     }
 }
 
-void createBlockchain(std::vector<Transaction> &transactions, int blockSize)
+void createBlockchain(std::vector<Transaction> &transactions, int blockSize, int difficulty)
 {
     std::mt19937 mt(static_cast<long unsigned int>(std::chrono::high_resolution_clock::now().time_since_epoch().count()));
     std::shuffle(transactions.begin(), transactions.end(), mt);
     std::vector<Transaction> txToBlock;
-    std::string allTransactionsToHash = "";
     std::list<Block> blockchain;
 
     while (!transactions.empty())
     {
+        std::string allTransactionsToHash = "";
         int txSize = transactions.size();
         for (int i = txSize - 1; i >= (txSize - (blockSize)) && !transactions.empty(); i--)
         {
@@ -169,7 +173,7 @@ void createBlockchain(std::vector<Transaction> &transactions, int blockSize)
             previousBlockHash.append(64, '0');
         else
             previousBlockHash = blockchain.back().getBlockHash();
-        Block newBlock = mineBlock(previousBlockHash, hash(allTransactionsToHash));
+        Block newBlock = mineBlock(previousBlockHash, hash(allTransactionsToHash), difficulty);
         newBlock.setTransactions(txToBlock);
         blockchain.push_back(newBlock);
     }

@@ -41,7 +41,6 @@ double User::getBalance() const
 
 void User::addUTXO(double amount)
 {
-
     std::string idToHash = this->name + this->publicKey + std::to_string(amount) + generateSalt();
     std::string id = hash(idToHash);
 
