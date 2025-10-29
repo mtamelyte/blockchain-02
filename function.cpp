@@ -1,5 +1,16 @@
 #include "include/lib.h"
-#include <ranges>
+
+UTXO createUtxo(std::string userName, std::string userKey, int amount)
+{
+    std::string idToHash = userName + userKey + std::to_string(amount) + generateSalt();
+    std::string id = hash(idToHash);
+
+    UTXO utxo;
+    utxo.id = id;
+    utxo.amount = amount;
+
+    return utxo;
+}
 
 std::string generateSalt()
 {
@@ -16,7 +27,7 @@ std::string generateSalt()
     return salt;
 }
 
-std::vector<User> generateUsers(const int userAmount)
+std::vector<User> generateUsers(int userAmount)
 {
     std::vector<User> users;
     for (int i = 1; i <= userAmount; i++)
@@ -35,8 +46,8 @@ std::vector<User> generateUsers(const int userAmount)
         // generate 10 UTXOs for each user
         for (int j = 0; j < 10; j++)
         {
-            double amount = amt(mt);
-            user.addUTXO(amount);
+            int amount = amt(mt);
+            UTXO utxo = createUtxo(user.getName(), user.getPublicKey(), amount);
         }
 
         users.push_back(user);
@@ -69,7 +80,6 @@ std::vector<Transaction> generateTransactions(const int txAmount, std::vector<Us
         // get the sender and receiver as objects
         User sender = users[senderIt];
         User receiver = users[receiverIt];
-        std::cout << sender.getName() << ": " << sender.getBalance() << " " << receiver.getName() << ": " << receiver.getBalance() << std::endl;
 
         // randomly generate an amount to transfer
         double amountToTransfer = amt(mt);
@@ -80,33 +90,42 @@ std::vector<Transaction> generateTransactions(const int txAmount, std::vector<Us
             // if they don't, pick a new amount to transfer
             amountToTransfer = amt(mt);
         }
+
         // get the existing UTXOs
         std::vector<UTXO> utxos = sender.getUTXOs();
         double remainingAmount = amountToTransfer;
+        std::vector<UTXO> input;
+        std::vector<UTXO> output;
 
         for (auto utxo : utxos)
         {
             // if the current utxo is not enough to close the transaction, move it to the receiver, deduct the amount and keep going
             if (utxo.amount < remainingAmount)
             {
-                sender.removeUTXO(utxo.id);
-                receiver.addUTXO(utxo.amount);
+                output.push_back(utxo);
+                UTXO newUtxo = createUtxo(receiver.getName(), receiver.getPublicKey(), utxo.amount);
+                input.push_back(newUtxo);
                 remainingAmount -= utxo.amount;
             }
+
             // if the current utxo is exactly enough, move it to the receiver and break the loop
             else if (utxo.amount == remainingAmount)
             {
-                sender.removeUTXO(utxo.id);
-                receiver.addUTXO(utxo.amount);
+                output.push_back(utxo);
+                UTXO newUtxo = createUtxo(receiver.getName(), receiver.getPublicKey(), utxo.amount);
+                input.push_back(newUtxo);
                 remainingAmount = 0;
                 break;
             }
+
             // if the current utxo is bigger than the remaining amount, remove it, split it into the needed sum and the remainder and add them back to respective users
             else
             {
-                sender.removeUTXO(utxo.id);
-                receiver.addUTXO(remainingAmount);
-                sender.addUTXO(utxo.amount - remainingAmount);
+                output.push_back(utxo);
+                UTXO newUtxo = createUtxo(receiver.getName(), receiver.getPublicKey(), remainingAmount);
+                UTXO change = createUtxo(sender.getName(), sender.getPublicKey(), utxo.amount - remainingAmount);
+                input.push_back(newUtxo);
+                input.push_back(change);
                 remainingAmount = 0;
                 break;
             }
@@ -117,7 +136,7 @@ std::vector<Transaction> generateTransactions(const int txAmount, std::vector<Us
         std::string txId = hash(idPreHash);
 
         // construct a transaction with all the generated data and add it to the list
-        Transaction tx(txId, sender.getPublicKey(), receiver.getPublicKey(), amountToTransfer);
+        Transaction tx(txId, sender.getPublicKey(), receiver.getPublicKey(), amountToTransfer, input, output);
         transactions.push_back(tx);
 
         // ensure the changes are updated in the list of users as well
@@ -135,44 +154,69 @@ std::vector<Transaction> generateTransactions(const int txAmount, std::vector<Us
 
 Block mineBlock(std::string previousBlockHash, std::string merkleRootHash, int difficulty)
 {
+    // initializes proof of work
     int nonce = 0;
+
+    // creates the difficulty (how many zeroes in a row is required)
     std::string diff = "";
     diff.append(difficulty, '0');
+
     while (true)
     {
+        // creates a new block with the current nonce and hashes it
         Block newBlock(previousBlockHash, merkleRootHash, nonce++, difficulty);
         std::string hash = newBlock.calculateBlockHash();
-        std::cout << hash << std::endl;
+
+        // checks if it matches the difficulty
         if (hash.substr(0, 3) == diff)
         {
+            // if so, the mining function ends
             return newBlock;
             break;
         }
     }
 }
 
+void moveUTXOs(std::vector<UTXO> input, std::vector<UTXO> output)
+{
+    for (UTXO utxo : input)
+    {
+    }
+}
+
 void createBlockchain(std::vector<Transaction> &transactions, int blockSize, int difficulty)
 {
+    // randomizes the transaction list
     std::mt19937 mt(static_cast<long unsigned int>(std::chrono::high_resolution_clock::now().time_since_epoch().count()));
     std::shuffle(transactions.begin(), transactions.end(), mt);
+
+    // initializes the variables
     std::vector<Transaction> txToBlock;
     std::list<Block> blockchain;
 
     while (!transactions.empty())
     {
         std::string allTransactionsToHash = "";
+
+        // separate txSize variable because the size of the transactions vector changes every loop
         int txSize = transactions.size();
+
+        // adds transactions to a separate list to add to the block and removes them from the main list
         for (int i = txSize - 1; i >= (txSize - (blockSize)) && !transactions.empty(); i--)
         {
             txToBlock.push_back(transactions[i]);
             allTransactionsToHash += transactions[i].getTransactionId();
             transactions.pop_back();
         }
+
+        // gets the previous block hash
         std::string previousBlockHash;
         if (blockchain.empty())
             previousBlockHash.append(64, '0');
         else
             previousBlockHash = blockchain.back().getBlockHash();
+
+        // mines the block, adds the transaction record and connects it to the blockchain
         Block newBlock = mineBlock(previousBlockHash, hash(allTransactionsToHash), difficulty);
         newBlock.setTransactions(txToBlock);
         blockchain.push_back(newBlock);

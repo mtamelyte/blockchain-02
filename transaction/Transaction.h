@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include "../include/utxo.h"
 class Transaction
 {
 private:
@@ -10,9 +11,11 @@ private:
     std::string senderId;
     std::string receiverId;
     double amount;
+    std::vector<UTXO> inputs;
+    std::vector<UTXO> outputs;
 
 public:
-    Transaction(std::string transactionId, std::string senderId, std::string receiverId, double amount);
+    Transaction(std::string transactionId, std::string senderId, std::string receiverId, double amount, std::vector<UTXO> inputs, std::vector<UTXO> ouputs);
 
     std::string getTransactionId();
 };

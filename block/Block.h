@@ -1,11 +1,7 @@
-#include <bits/stdc++.h>
-#include "../transaction/Transaction.h"
 #ifndef BLOCK_H
 #define BLOCK_H
 
-#include <vector>
-#include <string>
-
+#include "../include/lib.h"
 class Block
 {
 private:

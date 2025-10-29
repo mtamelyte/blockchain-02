@@ -1,11 +1,19 @@
-#include <bits/stdc++.h>
-#include <chrono>
-#include "../user/User.h"
-#include "../transaction/Transaction.h"
+#include <vector>
+#include "utxo.h"
 #include "../block/Block.h"
+#include "../transaction/Transaction.h"
+#include "../user/User.h"
+#include <chrono>
+#include <random>
+#include <iostream>
+#include <list>
+#include <sstream>
+#include <iomanip>
+#include <array>
+#include <algorithm>
 
-std::string hash(const std::string &input);
-std::vector<User> generateUsers(const int userAmount);
 std::vector<Transaction> generateTransactions(const int txAmount, std::vector<User> &users);
-std::string generateSalt();
 void createBlockchain(std::vector<Transaction> &transactions, int blockSize, int difficulty);
+std::vector<User> generateUsers(int userAmount);
+std::string generateSalt();
+std::string hash(const std::string &input);

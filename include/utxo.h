@@ -2,9 +2,9 @@
 #define UTXO_H
 
 #include <string>
-
-struct UTXO
+class UTXO
 {
+public:
     std::string id;
     double amount;
 };

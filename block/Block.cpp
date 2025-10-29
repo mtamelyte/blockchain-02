@@ -1,5 +1,5 @@
-#include "../include/lib.h"
 #include "Block.h"
+#include "../include/lib.h"
 
 Block::Block(std::string previousBlockHash, std::string merkleRootHash, size_t nonce, int difficulty)
 {

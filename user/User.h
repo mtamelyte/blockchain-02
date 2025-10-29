@@ -1,14 +1,14 @@
 #ifndef USER_H
 #define USER_H
 
-#include "../include/utxo.h"
+#include <string>
 #include <vector>
+#include "../include/utxo.h"
 class User
 {
 private:
     std::string name;
     std::string publicKey;
-    double balance;
     std::vector<UTXO> utxos;
 
 public:
@@ -20,10 +20,9 @@ public:
     void setPublicKey(std::string publicKey);
     std::string getPublicKey() const;
 
-    void setBalance(double balance);
     double getBalance() const;
 
-    void addUTXO(double amount);
+    void addUTXO(UTXO utxo);
     void removeUTXO(std::string id);
     std::vector<UTXO> getUTXOs();
 };

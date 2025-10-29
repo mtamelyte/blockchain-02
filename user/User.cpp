@@ -5,7 +5,6 @@ User::User(std::string name, std::string publicKey)
 {
     this->name = name;
     this->publicKey = publicKey;
-    this->balance = 0;
     this->utxos = {};
 }
 
@@ -29,27 +28,18 @@ std::string User::getPublicKey() const
     return this->publicKey;
 }
 
-void User::setBalance(double balance)
-{
-    this->balance = balance;
-}
-
 double User::getBalance() const
 {
-    return this->balance;
+    double balance = 0;
+    for (UTXO utxo : utxos)
+    {
+        balance += utxo.amount;
+    }
+    return balance;
 }
 
-void User::addUTXO(double amount)
+void User::addUTXO(UTXO utxo)
 {
-    std::string idToHash = this->name + this->publicKey + std::to_string(amount) + generateSalt();
-    std::string id = hash(idToHash);
-
-    UTXO utxo;
-    utxo.id = id;
-    utxo.amount = amount;
-
-    this->balance += amount;
-
     this->utxos.push_back(utxo);
 }
 
@@ -60,7 +50,6 @@ void User::removeUTXO(std::string id)
     {
         if (utxo.id == id)
         {
-            this->balance -= utxo.amount;
             break;
         }
         it++;
