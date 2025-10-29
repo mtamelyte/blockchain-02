@@ -29,3 +29,8 @@ void Block::setTransactions(std::vector<Transaction> transactions)
 {
     this->transactions = transactions;
 }
+
+size_t Block::getNonce()
+{
+    return this->nonce;
+}

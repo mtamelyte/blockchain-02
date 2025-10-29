@@ -23,6 +23,8 @@ public:
     std::string calculateBlockHash();
 
     void setTransactions(std::vector<Transaction> transactions);
+
+    size_t getNonce();
 };
 
 #endif

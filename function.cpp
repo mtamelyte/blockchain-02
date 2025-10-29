@@ -21,7 +21,7 @@ std::vector<User> generateUsers(int userAmount)
     for (int i = 1; i <= userAmount; i++)
     {
         std::mt19937 mt(static_cast<long unsigned int>(std::chrono::high_resolution_clock::now().time_since_epoch().count()));
-        std::uniform_int_distribution<> amt(100, 1000);
+        std::uniform_int_distribution<> amt(50, 500);
 
         const std::string name = "User_" + std::to_string(i); // create a username like "User_45"
 
@@ -31,11 +31,11 @@ std::vector<User> generateUsers(int userAmount)
 
         User user(name, publicKey); // construct a user with the specified username and public key
 
-        // generate 10 UTXOs for each user
-        for (int j = 0; j < 10; j++)
+        // generate 50 UTXOs for each user
+        for (int j = 0; j < 50; j++)
         {
             int amount = amt(mt);
-            UTXO utxo(user.getName(), user.getPublicKey(), amount);
+            UTXO utxo(user.getName(), user.getPublicKey(), amount, "", 0);
             user.addUTXO(utxo);
         }
 
@@ -51,7 +51,7 @@ std::vector<Transaction> generateTransactions(const int txAmount, std::vector<Us
 
     std::mt19937 mt(static_cast<long unsigned int>(std::chrono::high_resolution_clock::now().time_since_epoch().count()));
     std::uniform_int_distribution<> num(0, 999);
-    std::uniform_int_distribution<> amt(1, 5000);
+    std::uniform_int_distribution<> amt(1, 1000);
 
     for (int i = 0; i < txAmount; i++)
     {
@@ -90,12 +90,14 @@ std::vector<Transaction> generateTransactions(const int txAmount, std::vector<Us
 
         std::vector<UTXO> output;
 
-        std::cout << sender.getName() << ": " << sender.getBalance() << " " << receiver.getName() << ": " << receiver.getBalance() << std::endl;
+        std::cout << "Transaction #" << i + 1 << std::endl;
+        std::cout << "Sender: " << sender.getName() << ", receiver: " << receiver.getName() << ". Amount transferred: " << amountToTransfer << std::endl;
+        std::cout << "Inputs: " << std::endl;
 
-        for (auto utxo : utxos)
+        for (auto &utxo : utxos)
         {
             // if the current utxo is not enough to close the transaction, move it to the receiver, deduct the amount and keep going
-            if (utxo.used == true)
+            if (utxo.used)
             {
                 continue;
             }
@@ -104,7 +106,9 @@ std::vector<Transaction> generateTransactions(const int txAmount, std::vector<Us
                 utxo.used = true;
                 utxo.txId = txId;
 
-                UTXO newUtxo(receiver.getName(), receiver.getPublicKey(), utxo.amount);
+                std::cout << "UTXO ID: " << utxo.id << ", value: " << utxo.amount << std::endl;
+
+                UTXO newUtxo(receiver.getName(), receiver.getPublicKey(), utxo.amount, txId, 0);
                 output.push_back(newUtxo);
 
                 remainingAmount -= utxo.amount;
@@ -116,7 +120,9 @@ std::vector<Transaction> generateTransactions(const int txAmount, std::vector<Us
                 utxo.used = true;
                 utxo.txId = txId;
 
-                UTXO newUtxo(receiver.getName(), receiver.getPublicKey(), utxo.amount);
+                std::cout << "UTXO ID: " << utxo.id << ", value: " << utxo.amount << std::endl;
+
+                UTXO newUtxo(receiver.getName(), receiver.getPublicKey(), utxo.amount, txId, 0);
                 output.push_back(newUtxo);
 
                 remainingAmount = 0;
@@ -129,8 +135,10 @@ std::vector<Transaction> generateTransactions(const int txAmount, std::vector<Us
                 utxo.used = true;
                 utxo.txId = txId;
 
-                UTXO newUtxo(receiver.getName(), receiver.getPublicKey(), remainingAmount);
-                UTXO change(sender.getName(), sender.getPublicKey(), utxo.amount - remainingAmount);
+                std::cout << "UTXO ID: " << utxo.id << ", value: " << utxo.amount << std::endl;
+
+                UTXO newUtxo(receiver.getName(), receiver.getPublicKey(), remainingAmount, txId, 0);
+                UTXO change(sender.getName(), sender.getPublicKey(), utxo.amount - remainingAmount, txId, 1);
 
                 output.push_back(newUtxo);
                 output.push_back(change);
@@ -138,6 +146,15 @@ std::vector<Transaction> generateTransactions(const int txAmount, std::vector<Us
                 remainingAmount = 0;
                 break;
             }
+        }
+
+        std::cout << "Outputs: " << std::endl;
+        for (auto utxo : output)
+        {
+            std::cout << "UTXO ID: " << utxo.id << ", value: " << utxo.amount;
+            if (utxo.changeFlag)
+                std::cout << " (change)";
+            std::cout << std::endl;
         }
 
         // update the utxo status in the sender's data
@@ -151,9 +168,6 @@ std::vector<Transaction> generateTransactions(const int txAmount, std::vector<Us
         users[senderIt] = sender;
         users[receiverIt] = receiver;
 
-        std::cout << i << std::endl;
-        std::cout << "Siuntėjas: " << sender.getName() << ", gavėjas: " << receiver.getName() << ". Pervesta " << amountToTransfer << std::endl;
-        std::cout << sender.getName() << ": " << sender.getBalance() << " " << receiver.getName() << ": " << receiver.getBalance() << std::endl;
         std::cout << std::endl;
     }
 
@@ -224,7 +238,7 @@ void moveUTXOs(std::vector<Transaction> &txToBlock, std::vector<User> users)
         std::vector<UTXO> outputs = tx.getOutputs();
         for (auto utxo : outputs)
         {
-            if (utxo.receiverId == sender.getPublicKey())
+            if (utxo.changeFlag)
             {
                 sender.addUTXO(utxo);
             }
@@ -271,6 +285,13 @@ void createBlockchain(std::vector<Transaction> &transactions, int blockSize, int
         newBlock.setTransactions(txToBlock);
         blockchain.push_back(newBlock);
 
+        std::cout << "New block mined! " << std::endl;
+        std::cout << "Difficulty: " << difficulty << std::endl;
+        std::cout << "Hash: " << newBlock.getBlockHash() << std::endl;
+        std::cout << "Nonce: " << newBlock.getNonce() << std::endl;
+        std::cout << std::endl;
+
+        // officially moves all the utxos used and created in the transactions in the block
         moveUTXOs(txToBlock, users);
         txToBlock.clear();
     }
