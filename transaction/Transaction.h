@@ -11,13 +11,15 @@ private:
     std::string senderId;
     std::string receiverId;
     double amount;
-    std::vector<UTXO> inputs;
     std::vector<UTXO> outputs;
 
 public:
-    Transaction(std::string transactionId, std::string senderId, std::string receiverId, double amount, std::vector<UTXO> inputs, std::vector<UTXO> ouputs);
+    Transaction(std::string transactionId, std::string senderId, std::string receiverId, double amount, std::vector<UTXO> ouputs);
 
     std::string getTransactionId();
+    std::vector<UTXO> getOutputs();
+    std::string getSenderId();
+    std::string getReceiverId();
 };
 
 #endif

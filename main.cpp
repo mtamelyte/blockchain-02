@@ -9,5 +9,5 @@ int main()
 
     std::vector<User> users = generateUsers(amountOfUsers);
     std::vector<Transaction> transactions = generateTransactions(amountOfTransactions, users);
-    createBlockchain(transactions, transactionsInBlock, difficulty);
+    createBlockchain(transactions, transactionsInBlock, difficulty, users);
 }

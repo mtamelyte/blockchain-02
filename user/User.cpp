@@ -33,7 +33,8 @@ double User::getBalance() const
     double balance = 0;
     for (UTXO utxo : utxos)
     {
-        balance += utxo.amount;
+        if (utxo.used == false)
+            balance += utxo.amount;
     }
     return balance;
 }
@@ -60,4 +61,9 @@ void User::removeUTXO(std::string id)
 std::vector<UTXO> User::getUTXOs()
 {
     return this->utxos;
+}
+
+void User::setUTXOs(std::vector<UTXO> utxos)
+{
+    this->utxos = utxos;
 }

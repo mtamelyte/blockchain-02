@@ -1,17 +1,5 @@
 #include "include/lib.h"
 
-UTXO createUtxo(std::string userName, std::string userKey, int amount)
-{
-    std::string idToHash = userName + userKey + std::to_string(amount) + generateSalt();
-    std::string id = hash(idToHash);
-
-    UTXO utxo;
-    utxo.id = id;
-    utxo.amount = amount;
-
-    return utxo;
-}
-
 std::string generateSalt()
 {
     std::mt19937 mt(static_cast<long unsigned int>(std::chrono::high_resolution_clock::now().time_since_epoch().count()));
@@ -47,7 +35,8 @@ std::vector<User> generateUsers(int userAmount)
         for (int j = 0; j < 10; j++)
         {
             int amount = amt(mt);
-            UTXO utxo = createUtxo(user.getName(), user.getPublicKey(), amount);
+            UTXO utxo(user.getName(), user.getPublicKey(), amount);
+            user.addUTXO(utxo);
         }
 
         users.push_back(user);
@@ -94,26 +83,42 @@ std::vector<Transaction> generateTransactions(const int txAmount, std::vector<Us
         // get the existing UTXOs
         std::vector<UTXO> utxos = sender.getUTXOs();
         double remainingAmount = amountToTransfer;
-        std::vector<UTXO> input;
+
+        // create transaction id - a hash of all other data
+        std::string idPreHash = sender.getPublicKey() + receiver.getPublicKey() + std::to_string(amountToTransfer);
+        std::string txId = hash(idPreHash);
+
         std::vector<UTXO> output;
+
+        std::cout << sender.getName() << ": " << sender.getBalance() << " " << receiver.getName() << ": " << receiver.getBalance() << std::endl;
 
         for (auto utxo : utxos)
         {
             // if the current utxo is not enough to close the transaction, move it to the receiver, deduct the amount and keep going
-            if (utxo.amount < remainingAmount)
+            if (utxo.used == true)
             {
-                output.push_back(utxo);
-                UTXO newUtxo = createUtxo(receiver.getName(), receiver.getPublicKey(), utxo.amount);
-                input.push_back(newUtxo);
+                continue;
+            }
+            else if (utxo.amount < remainingAmount)
+            {
+                utxo.used = true;
+                utxo.txId = txId;
+
+                UTXO newUtxo(receiver.getName(), receiver.getPublicKey(), utxo.amount);
+                output.push_back(newUtxo);
+
                 remainingAmount -= utxo.amount;
             }
 
             // if the current utxo is exactly enough, move it to the receiver and break the loop
             else if (utxo.amount == remainingAmount)
             {
-                output.push_back(utxo);
-                UTXO newUtxo = createUtxo(receiver.getName(), receiver.getPublicKey(), utxo.amount);
-                input.push_back(newUtxo);
+                utxo.used = true;
+                utxo.txId = txId;
+
+                UTXO newUtxo(receiver.getName(), receiver.getPublicKey(), utxo.amount);
+                output.push_back(newUtxo);
+
                 remainingAmount = 0;
                 break;
             }
@@ -121,22 +126,25 @@ std::vector<Transaction> generateTransactions(const int txAmount, std::vector<Us
             // if the current utxo is bigger than the remaining amount, remove it, split it into the needed sum and the remainder and add them back to respective users
             else
             {
-                output.push_back(utxo);
-                UTXO newUtxo = createUtxo(receiver.getName(), receiver.getPublicKey(), remainingAmount);
-                UTXO change = createUtxo(sender.getName(), sender.getPublicKey(), utxo.amount - remainingAmount);
-                input.push_back(newUtxo);
-                input.push_back(change);
+                utxo.used = true;
+                utxo.txId = txId;
+
+                UTXO newUtxo(receiver.getName(), receiver.getPublicKey(), remainingAmount);
+                UTXO change(sender.getName(), sender.getPublicKey(), utxo.amount - remainingAmount);
+
+                output.push_back(newUtxo);
+                output.push_back(change);
+
                 remainingAmount = 0;
                 break;
             }
         }
 
-        // create transaction id - a hash of all other data
-        std::string idPreHash = sender.getPublicKey() + receiver.getPublicKey() + std::to_string(amountToTransfer);
-        std::string txId = hash(idPreHash);
+        // update the utxo status in the sender's data
+        sender.setUTXOs(utxos);
 
         // construct a transaction with all the generated data and add it to the list
-        Transaction tx(txId, sender.getPublicKey(), receiver.getPublicKey(), amountToTransfer, input, output);
+        Transaction tx(txId, sender.getPublicKey(), receiver.getPublicKey(), amountToTransfer, output);
         transactions.push_back(tx);
 
         // ensure the changes are updated in the list of users as well
@@ -177,14 +185,56 @@ Block mineBlock(std::string previousBlockHash, std::string merkleRootHash, int d
     }
 }
 
-void moveUTXOs(std::vector<UTXO> input, std::vector<UTXO> output)
+// from https://stackoverflow.com/questions/15517991/search-a-vector-of-objects-by-object-attribute
+int findUser(std::vector<User> users, std::string userId)
 {
-    for (UTXO utxo : input)
+    auto it = find_if(users.begin(), users.end(), [&userId](const User &obj)
+                      { return obj.getPublicKey() == userId; });
+
+    if (it != users.end())
     {
+        auto index = std::distance(users.begin(), it);
+
+        return index;
     }
 }
 
-void createBlockchain(std::vector<Transaction> &transactions, int blockSize, int difficulty)
+void moveUTXOs(std::vector<Transaction> &txToBlock, std::vector<User> users)
+{
+    // go through all the transactions that were included in the block
+    for (auto tx : txToBlock)
+    {
+        // get the sender
+        User sender = users[findUser(users, tx.getSenderId())];
+
+        // go through all the sender utxos and remove the used ones
+        std::vector<UTXO> utxos = sender.getUTXOs();
+        for (auto utxo : utxos)
+        {
+            if (utxo.txId == tx.getTransactionId() && utxo.used == true)
+            {
+                sender.removeUTXO(utxo.id);
+            }
+        }
+
+        // get the receiver
+        User receiver = users[findUser(users, tx.getReceiverId())];
+
+        // go through all the outputs of a transaction and move them to the approporiate receivers
+        std::vector<UTXO> outputs = tx.getOutputs();
+        for (auto utxo : outputs)
+        {
+            if (utxo.receiverId == sender.getPublicKey())
+            {
+                sender.addUTXO(utxo);
+            }
+            else
+                receiver.addUTXO(utxo);
+        }
+    }
+}
+
+void createBlockchain(std::vector<Transaction> &transactions, int blockSize, int difficulty, std::vector<User> users)
 {
     // randomizes the transaction list
     std::mt19937 mt(static_cast<long unsigned int>(std::chrono::high_resolution_clock::now().time_since_epoch().count()));
@@ -220,5 +270,8 @@ void createBlockchain(std::vector<Transaction> &transactions, int blockSize, int
         Block newBlock = mineBlock(previousBlockHash, hash(allTransactionsToHash), difficulty);
         newBlock.setTransactions(txToBlock);
         blockchain.push_back(newBlock);
+
+        moveUTXOs(txToBlock, users);
+        txToBlock.clear();
     }
 }

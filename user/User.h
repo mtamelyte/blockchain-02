@@ -24,7 +24,9 @@ public:
 
     void addUTXO(UTXO utxo);
     void removeUTXO(std::string id);
+
     std::vector<UTXO> getUTXOs();
+    void setUTXOs(std::vector<UTXO> utxos);
 };
 
 #endif
