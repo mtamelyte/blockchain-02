@@ -15,5 +15,3 @@
 std::vector<Transaction> generateTransactions(const int txAmount, std::vector<User> &users);
 void createBlockchain(std::vector<Transaction> &transactions, int blockSize, int difficulty, std::vector<User> users);
 std::vector<User> generateUsers(int userAmount);
-std::string generateSalt();
-std::string hash(const std::string &input);
