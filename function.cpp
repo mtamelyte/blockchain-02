@@ -190,7 +190,7 @@ Block mineBlock(std::string previousBlockHash, std::string merkleRootHash, int d
         std::string hash = newBlock.calculateBlockHash();
 
         // checks if it matches the difficulty
-        if (hash.substr(0, 3) == diff)
+        if (hash.substr(0, difficulty) == diff)
         {
             // if so, the mining function ends
             return newBlock;
@@ -269,7 +269,6 @@ void createBlockchain(std::vector<Transaction> &transactions, int blockSize, int
         for (int i = txSize - 1; i >= (txSize - (blockSize)) && !transactions.empty(); i--)
         {
             txToBlock.push_back(transactions[i]);
-            allTransactionsToHash += transactions[i].getTransactionId();
             transactions.pop_back();
         }
 
@@ -281,7 +280,7 @@ void createBlockchain(std::vector<Transaction> &transactions, int blockSize, int
             previousBlockHash = blockchain.back().getBlockHash();
 
         // mines the block, adds the transaction record and connects it to the blockchain
-        Block newBlock = mineBlock(previousBlockHash, hash(allTransactionsToHash), difficulty);
+        Block newBlock = mineBlock(previousBlockHash, merkleRootHash(txToBlock), difficulty);
         newBlock.setTransactions(txToBlock);
         blockchain.push_back(newBlock);
 

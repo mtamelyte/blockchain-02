@@ -46,6 +46,7 @@ std::string merkleRootHash(std::vector<Transaction> transactions)
         if (finalTx != "")
         {
             hashes[counter] = hash(finalTx);
+            counter++;
             finalTx = "";
         }
 
