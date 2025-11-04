@@ -53,7 +53,7 @@ std::vector<Transaction> generateTransactions(const int txAmount, std::vector<Us
     std::stringstream buffer;
 
     std::mt19937 mt(static_cast<long unsigned int>(std::chrono::high_resolution_clock::now().time_since_epoch().count()));
-    std::uniform_int_distribution<> num(0, 999);
+    std::uniform_int_distribution<> num(0, users.size() - 1);
     std::uniform_int_distribution<> amt(1, 1000);
 
     for (int i = 0; i < txAmount; i++)
