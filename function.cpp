@@ -30,15 +30,18 @@ std::vector<User> generateUsers(int userAmount)
         const std::string publicKey = hash(preHashPublicKey);
 
         User user(name, publicKey); // construct a user with the specified username and public key
+        std::cout << name << " " << std::endl;
+        std::cout << "UTXOs: " << std::endl;
 
         // generate 50 UTXOs for each user
-        for (int j = 0; j < 50; j++)
+        for (int j = 0; j < 15; j++)
         {
             int amount = amt(mt);
             UTXO utxo(user.getName(), user.getPublicKey(), amount, "", 0);
             user.addUTXO(utxo);
+            std::cout << utxo.id << " " << utxo.amount << std::endl;
         }
-
+        std::cout << std::endl;
         users.push_back(user);
     }
 
@@ -103,11 +106,12 @@ std::vector<Transaction> generateTransactions(const int txAmount, std::vector<Us
 
         for (auto &utxo : utxos)
         {
-            // if the current utxo is not enough to close the transaction, move it to the receiver, deduct the amount and keep going
+            // if the current utxo is already used in a different transaction, move on
             if (utxo.used)
             {
                 continue;
             }
+            // if the current utxo is not enough to close the transaction, move it to the receiver, deduct the amount and keep going
             else if (utxo.amount < remainingAmount)
             {
                 utxo.used = true;

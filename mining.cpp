@@ -69,25 +69,25 @@ void moveUTXOs(std::vector<Transaction> &txToBlock, std::vector<User> &users)
     for (auto tx : txToBlock)
     {
         // get the sender
-        User sender = users[findUser(users, tx.getSenderId())];
+        User &sender = users[findUser(users, tx.getSenderId())];
 
-        // go through all the sender utxos and remove the used ones
         std::vector<UTXO> utxos = sender.getUTXOs();
         for (auto utxo : utxos)
         {
-            if (utxo.txId == tx.getTransactionId() && utxo.used == true)
+            if (utxo.txId == tx.getTransactionId() && utxo.used)
             {
                 sender.removeUTXO(utxo.id);
             }
         }
 
         // get the receiver
-        User receiver = users[findUser(users, tx.getReceiverId())];
+        User &receiver = users[findUser(users, tx.getReceiverId())];
 
-        // go through all the outputs of a transaction and move them to the approporiate receivers
+        // go through all the outputs of a transaction and move them to the appropriate receivers
         std::vector<UTXO> outputs = tx.getOutputs();
         for (auto utxo : outputs)
         {
+            std::cout << utxo.id << " " << utxo.amount << std::endl;
             if (utxo.changeFlag)
             {
                 sender.addUTXO(utxo);

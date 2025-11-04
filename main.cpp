@@ -19,11 +19,21 @@ int main()
     std::vector<User> users = generateUsers(amountOfUsers);
     std::vector<Transaction> transactions = generateTransactions(amountOfTransactions, users);
     createBlockchain(transactions, transactionsInBlock, difficulty, users);
+    for (auto user : users)
+    {
+        std::cout << user.getName() << std::endl;
+        std::cout << "UTXOs:" << std::endl;
+        for (auto utxo : user.getUTXOs())
+        {
+            std::cout << utxo.id << " " << utxo.amount << std::endl;
+        }
+        std::cout << std::endl;
+    }
 }
 // todo
-// mining for a limited time
+// mining for a limited time/try amount
+// sufixint merkle tree (padaryt duomenu struktura ne tsg funkcija)
 // readme
-// parallel mining
 // sorting utxos
 // changing transaction utxo logic to go from largest to smallest
 // improve transaction picking (pick at random instead of randomizing first and then going in a row)

@@ -1,6 +1,6 @@
 #include "Transaction.h"
 
-Transaction::Transaction(std::string transactionId, std::string senderId, std::string receiverId, double amount, std::vector<UTXO> ouputs)
+Transaction::Transaction(std::string transactionId, std::string senderId, std::string receiverId, double amount, std::vector<UTXO> outputs)
 {
     this->transactionId = transactionId;
     this->senderId = senderId;
