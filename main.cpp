@@ -21,7 +21,6 @@ int main()
     createBlockchain(transactions, transactionsInBlock, difficulty, users);
 }
 // todo
-// basic ui (pick amount of users, transactions, difficulty and block size)
 // mining for a limited time
 // readme
 // parallel mining
