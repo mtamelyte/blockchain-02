@@ -74,42 +74,65 @@ void moveUTXOs(std::vector<Transaction> &txToBlock, std::vector<User> users)
     }
 }
 
+std::vector<int> transactionsToBlock(std::vector<Transaction> transactions, int blockSize)
+{
+    std::vector<int> transactionsToBlock;
+    std::vector<bool> isPicked;
+
+    isPicked.assign(transactions.size(), false);
+
+    std::mt19937 mt(static_cast<long unsigned int>(std::chrono::high_resolution_clock::now().time_since_epoch().count()));
+    std::uniform_int_distribution<> tx(0, transactions.size() - 1);
+
+    for (int i = 0; i < blockSize; i++)
+    {
+        int it = tx(mt);
+
+        if (!isPicked[it])
+        {
+            transactionsToBlock.push_back(it);
+            isPicked[it] = true;
+        }
+    }
+
+    return transactionsToBlock;
+}
+
+void removeTransactionsFromList(std::vector<int> transactionIterators, std::vector<Transaction> &transactions)
+{
+    for (auto tx : transactionIterators)
+    {
+        transactions.erase(transactions.begin() + tx);
+    }
+}
+
 void createBlockchain(std::vector<Transaction> &transactions, int blockSize, int difficulty, std::vector<User> users)
 {
-    // randomizes the transaction list
-    std::mt19937 mt(static_cast<long unsigned int>(std::chrono::high_resolution_clock::now().time_since_epoch().count()));
-    std::shuffle(transactions.begin(), transactions.end(), mt);
-
-    // initializes the variables
-    std::vector<Transaction> txToBlock;
+    // initializes the blockchain
     std::list<Block> blockchain;
 
     std::stringstream buffer;
 
     while (!transactions.empty())
     {
-        std::string allTransactionsToHash = "";
+        std::vector<int> transactionIterators = transactionsToBlock(transactions, blockSize);
+        std::vector<Transaction> txToBlock;
 
-        // separate txSize variable because the size of the transactions vector changes every loop
-        int txSize = transactions.size();
-
-        // adds transactions to a separate list to add to the block and removes them from the main list
-        for (int i = txSize - 1; i >= (txSize - (blockSize)) && !transactions.empty(); i--)
+        // adds transactions to a separate list to add to the block
+        for (int i = 0; i < blockSize; i++)
         {
             // verify transaction id first
-            std::string idPreHash = transactions[i].getSenderId() + transactions[i].getReceiverId() + std::to_string(transactions[i].getAmount());
+            std::string idPreHash = transactions[transactionIterators[i]].getSenderId() + transactions[transactionIterators[i]].getReceiverId() + std::to_string(transactions[transactionIterators[i]].getAmount());
             std::string txId = hash(idPreHash);
 
-            if (txId != transactions[i].getTransactionId())
+            if (txId != transactions[transactionIterators[i]].getTransactionId())
             {
-                buffer << "Error: transaction ID doesn't match. Transaction skipped." << std::endl;
-                std::cout << "Error: transaction ID doesn't match. Transaction skipped." << std::endl;
-                transactions.pop_back();
+                buffer << "Error: transaction ID doesn't match. Transaction #" << transactionIterators[i] << " skipped." << std::endl;
+                std::cout << "Error: transaction ID doesn't match. Transaction #" << transactionIterators[i] << " skipped." << std::endl;
                 break;
             }
 
-            txToBlock.push_back(transactions[i]);
-            transactions.pop_back();
+            txToBlock.push_back(transactions[transactionIterators[i]]);
         }
 
         // gets the previous block hash
@@ -144,6 +167,7 @@ void createBlockchain(std::vector<Transaction> &transactions, int blockSize, int
 
         // officially moves all the utxos used and created in the transactions in the block
         moveUTXOs(txToBlock, users);
+        removeTransactionsFromList(transactionIterators, transactions);
         txToBlock.clear();
     }
 }
