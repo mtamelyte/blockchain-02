@@ -28,3 +28,8 @@ std::string Transaction::getReceiverId()
 {
     return this->receiverId;
 }
+
+double Transaction::getAmount()
+{
+    return amount;
+}

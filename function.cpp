@@ -49,6 +49,9 @@ std::vector<Transaction> generateTransactions(const int txAmount, std::vector<Us
 {
     std::vector<Transaction> transactions;
 
+    // prepare for writing to file
+    std::stringstream buffer;
+
     std::mt19937 mt(static_cast<long unsigned int>(std::chrono::high_resolution_clock::now().time_since_epoch().count()));
     std::uniform_int_distribution<> num(0, 999);
     std::uniform_int_distribution<> amt(1, 1000);
@@ -94,6 +97,10 @@ std::vector<Transaction> generateTransactions(const int txAmount, std::vector<Us
         std::cout << "Sender: " << sender.getName() << ", receiver: " << receiver.getName() << ". Amount transferred: " << amountToTransfer << std::endl;
         std::cout << "Inputs: " << std::endl;
 
+        buffer << "Transaction #" << i + 1 << std::endl;
+        buffer << "Sender: " << sender.getName() << ", receiver: " << receiver.getName() << ". Amount transferred: " << amountToTransfer << std::endl;
+        buffer << "Inputs: " << std::endl;
+
         for (auto &utxo : utxos)
         {
             // if the current utxo is not enough to close the transaction, move it to the receiver, deduct the amount and keep going
@@ -107,6 +114,7 @@ std::vector<Transaction> generateTransactions(const int txAmount, std::vector<Us
                 utxo.txId = txId;
 
                 std::cout << "UTXO ID: " << utxo.id << ", value: " << utxo.amount << std::endl;
+                buffer << "UTXO ID: " << utxo.id << ", value: " << utxo.amount << std::endl;
 
                 UTXO newUtxo(receiver.getName(), receiver.getPublicKey(), utxo.amount, txId, 0);
                 output.push_back(newUtxo);
@@ -121,6 +129,7 @@ std::vector<Transaction> generateTransactions(const int txAmount, std::vector<Us
                 utxo.txId = txId;
 
                 std::cout << "UTXO ID: " << utxo.id << ", value: " << utxo.amount << std::endl;
+                buffer << "UTXO ID: " << utxo.id << ", value: " << utxo.amount << std::endl;
 
                 UTXO newUtxo(receiver.getName(), receiver.getPublicKey(), utxo.amount, txId, 0);
                 output.push_back(newUtxo);
@@ -136,6 +145,7 @@ std::vector<Transaction> generateTransactions(const int txAmount, std::vector<Us
                 utxo.txId = txId;
 
                 std::cout << "UTXO ID: " << utxo.id << ", value: " << utxo.amount << std::endl;
+                buffer << "UTXO ID: " << utxo.id << ", value: " << utxo.amount << std::endl;
 
                 UTXO newUtxo(receiver.getName(), receiver.getPublicKey(), remainingAmount, txId, 0);
                 UTXO change(sender.getName(), sender.getPublicKey(), utxo.amount - remainingAmount, txId, 1);
@@ -149,12 +159,18 @@ std::vector<Transaction> generateTransactions(const int txAmount, std::vector<Us
         }
 
         std::cout << "Outputs: " << std::endl;
+        buffer << "Outputs:" << std::endl;
         for (auto utxo : output)
         {
             std::cout << "UTXO ID: " << utxo.id << ", value: " << utxo.amount;
+            buffer << "UTXO ID: " << utxo.id << ", value: " << utxo.amount;
             if (utxo.changeFlag)
+            {
                 std::cout << " (change)";
+                buffer << " (change)";
+            }
             std::cout << std::endl;
+            buffer << std::endl;
         }
 
         // update the utxo status in the sender's data
@@ -169,7 +185,13 @@ std::vector<Transaction> generateTransactions(const int txAmount, std::vector<Us
         users[receiverIt] = receiver;
 
         std::cout << std::endl;
+        buffer << std::endl;
     }
+
+    std::ofstream fout;
+    fout.open("transaction-log.txt");
+    fout << buffer.str();
+    fout.close();
 
     return transactions;
 }
@@ -258,6 +280,8 @@ void createBlockchain(std::vector<Transaction> &transactions, int blockSize, int
     std::vector<Transaction> txToBlock;
     std::list<Block> blockchain;
 
+    std::stringstream buffer;
+
     while (!transactions.empty())
     {
         std::string allTransactionsToHash = "";
@@ -268,6 +292,18 @@ void createBlockchain(std::vector<Transaction> &transactions, int blockSize, int
         // adds transactions to a separate list to add to the block and removes them from the main list
         for (int i = txSize - 1; i >= (txSize - (blockSize)) && !transactions.empty(); i--)
         {
+            // verify transaction id first
+            std::string idPreHash = transactions[i].getSenderId() + transactions[i].getReceiverId() + std::to_string(transactions[i].getAmount());
+            std::string txId = hash(idPreHash);
+
+            if (txId != transactions[i].getTransactionId())
+            {
+                buffer << "Error: transaction ID doesn't match. Transaction skipped." << std::endl;
+                std::cout << "Error: transaction ID doesn't match. Transaction skipped." << std::endl;
+                transactions.pop_back();
+                break;
+            }
+
             txToBlock.push_back(transactions[i]);
             transactions.pop_back();
         }
@@ -289,6 +325,18 @@ void createBlockchain(std::vector<Transaction> &transactions, int blockSize, int
         std::cout << "Hash: " << newBlock.getBlockHash() << std::endl;
         std::cout << "Nonce: " << newBlock.getNonce() << std::endl;
         std::cout << std::endl;
+
+        buffer << "New block mined! " << std::endl;
+        buffer << "Difficulty: " << difficulty << std::endl;
+        buffer << "Hash: " << newBlock.getBlockHash() << std::endl;
+        buffer << "Nonce: " << newBlock.getNonce() << std::endl;
+        buffer << std::endl;
+
+        // write log to file
+        std::ofstream fout;
+        fout.open("mining-log.txt");
+        fout << buffer.str();
+        fout.close();
 
         // officially moves all the utxos used and created in the transactions in the block
         moveUTXOs(txToBlock, users);

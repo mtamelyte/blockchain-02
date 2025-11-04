@@ -20,6 +20,7 @@ public:
     std::vector<UTXO> getOutputs();
     std::string getSenderId();
     std::string getReceiverId();
+    double getAmount();
 };
 
 #endif
