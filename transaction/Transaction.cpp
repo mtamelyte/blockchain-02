@@ -9,7 +9,7 @@ Transaction::Transaction(std::string transactionId, std::string senderId, std::s
     this->outputs = outputs;
 }
 
-std::string Transaction::getTransactionId()
+std::string Transaction::getTransactionId() const
 {
     return this->transactionId;
 }

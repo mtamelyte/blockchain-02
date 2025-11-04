@@ -16,7 +16,7 @@ private:
 public:
     Transaction(std::string transactionId, std::string senderId, std::string receiverId, double amount, std::vector<UTXO> ouputs);
 
-    std::string getTransactionId();
+    std::string getTransactionId() const;
     std::vector<UTXO> getOutputs();
     std::string getSenderId();
     std::string getReceiverId();
