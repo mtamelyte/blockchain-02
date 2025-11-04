@@ -87,7 +87,6 @@ void moveUTXOs(std::vector<Transaction> &txToBlock, std::vector<User> &users)
         std::vector<UTXO> outputs = tx.getOutputs();
         for (auto utxo : outputs)
         {
-            std::cout << utxo.id << " " << utxo.amount << std::endl;
             if (utxo.changeFlag)
             {
                 sender.addUTXO(utxo);
@@ -110,45 +109,73 @@ Block mineBlock(std::string previousBlockHash, int difficulty, std::stringstream
 {
     std::atomic<bool> isFound = false;
     Block minedBlock;
+    std::vector<std::vector<Transaction>> candidateBlocks;
+
+    int maxAttempts = 1000;
 
     // creates the difficulty (how many zeroes in a row is required)
     std::string diff = "";
     diff.append(difficulty, '0');
 
-#pragma omp parallel num_threads(5) default(none) shared(previousBlockHash, difficulty, diff, minedBlock, buffer, std::cout, transactions, blockSize, isFound, users)
+#pragma omp parallel num_threads(5) default(none) shared(candidateBlocks, maxAttempts, previousBlockHash, difficulty, diff, minedBlock, buffer, std::cout, transactions, blockSize, isFound, users)
     {
-        int threadId = omp_get_thread_num();
-        int numOfThreads = omp_get_num_threads();
-
         std::vector<Transaction> txToBlock = transactionsToBlock(transactions, blockSize);
-
-        // initializes proof of work
-        int nonce = threadId;
-
-        while (!isFound)
-        {
-            // creates a new block with the current nonce and hashes it
-            Block newBlock(previousBlockHash, merkleRootHash(txToBlock), nonce += 5, difficulty);
-            std::string hash = newBlock.calculateBlockHash();
-
-            // checks if it matches the difficulty
-            if (hash.substr(0, difficulty) == diff)
-            {
-                // if so, the mining function ends
-                bool expected = false;
-                if (isFound.compare_exchange_strong(expected, true))
-                {
 #pragma omp critical
-                    {
-                        std::cout << "Thread " << threadId << " won the race! (Total " << numOfThreads << " threads available)" << std::endl;
-                        minedBlock = newBlock;
-                        moveUTXOs(txToBlock, users);
-                        removeTransactionsFromList(txToBlock, transactions);
-                    }
-                }
-                break;
-            }
+        {
+            candidateBlocks.push_back(txToBlock);
         }
+    }
+
+multithreadMining: // goto is definitely not the optimal way to do this but idk how calling functions with pragma omp directives in them works lmao
+
+#pragma omp parallel num_threads(5) default(none) shared(candidateBlocks, maxAttempts, previousBlockHash, difficulty, diff, minedBlock, buffer, std::cout, transactions, blockSize, isFound, users)
+{
+
+    int threadId = omp_get_thread_num();
+    int numOfThreads = omp_get_num_threads();
+
+    std::vector<Transaction> txToBlock = candidateBlocks[threadId];
+
+    // initializes proof of work
+    int nonce = threadId;
+    int attemptCount = 0;
+
+    while (!isFound)
+    {
+        attemptCount++;
+        if (attemptCount > maxAttempts)
+            break;
+
+        // creates a new block with the current nonce and hashes it
+        Block newBlock(previousBlockHash, merkleRootHash(txToBlock), nonce += 5, difficulty);
+        std::string hash = newBlock.calculateBlockHash();
+
+        // checks if it matches the difficulty
+        if (hash.substr(0, difficulty) == diff)
+        {
+            // if so, the mining function ends
+            bool expected = false;
+            if (isFound.compare_exchange_strong(expected, true))
+            {
+#pragma omp critical
+                {
+                    std::cout << "Thread " << threadId << " won the race! (Total " << numOfThreads << " threads available)" << std::endl;
+                    minedBlock = newBlock;
+                    moveUTXOs(txToBlock, users);
+                    removeTransactionsFromList(txToBlock, transactions);
+                }
+            }
+            break;
+        }
+    }
+}
+
+    if (!isFound)
+    {
+        std::cout << "Failed to mine a block in " << maxAttempts << " attempts. ";
+        maxAttempts *= 2;
+        std::cout << "Retrying with " << maxAttempts << " attempts." << std::endl;
+        goto multithreadMining;
     }
     return minedBlock;
 }

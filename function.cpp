@@ -30,18 +30,14 @@ std::vector<User> generateUsers(int userAmount)
         const std::string publicKey = hash(preHashPublicKey);
 
         User user(name, publicKey); // construct a user with the specified username and public key
-        std::cout << name << " " << std::endl;
-        std::cout << "UTXOs: " << std::endl;
 
         // generate 50 UTXOs for each user
-        for (int j = 0; j < 15; j++)
+        for (int j = 0; j < 50; j++)
         {
             int amount = amt(mt);
             UTXO utxo(user.getName(), user.getPublicKey(), amount, "", 0);
             user.addUTXO(utxo);
-            std::cout << utxo.id << " " << utxo.amount << std::endl;
         }
-        std::cout << std::endl;
         users.push_back(user);
     }
 
