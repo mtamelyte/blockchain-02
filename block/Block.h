@@ -18,6 +18,7 @@ private:
 
 public:
     Block(std::string previousBlockHash, std::string merkleRootHash, size_t nonce, int difficulty);
+    Block() = default;
 
     std::string getBlockHash();
     std::string calculateBlockHash();

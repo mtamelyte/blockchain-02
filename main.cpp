@@ -29,4 +29,4 @@ int main()
 // improve transaction picking (pick at random instead of randomizing first and then going in a row)
 // changing difficulty as we go on??
 // allowing the generated users to mine and get rewards??
-// refactor where possible
+// refactor where possible(log output)

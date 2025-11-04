@@ -12,6 +12,7 @@
 #include <iomanip>
 #include <array>
 #include <algorithm>
+#include <atomic>
 #include <omp.h>
 
 std::vector<Transaction> generateTransactions(const int txAmount, std::vector<User> &users);
