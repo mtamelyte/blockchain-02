@@ -146,7 +146,7 @@ multithreadMining: // goto is definitely not the optimal way to do this but idk 
         if (attemptCount > maxAttempts)
             break;
 
-                // creates a new block with the current nonce and hashes it
+        // creates a new block with the current nonce and hashes it
         Block newBlock(previousBlockHash, MerkleTree(txToBlock).getRoot(), nonce += 5, difficulty);
         std::string hash = newBlock.calculateBlockHash();
 
@@ -201,17 +201,8 @@ void createBlockchain(std::vector<Transaction> &transactions, int blockSize, int
         newBlock = mineBlock(previousBlockHash, difficulty, buffer, transactions, blockSize, users);
         blockchain.push_back(newBlock);
 
-        std::cout << "New block mined! " << std::endl;
-        std::cout << "Difficulty: " << difficulty << std::endl;
-        std::cout << "Hash: " << newBlock.getBlockHash() << std::endl;
-        std::cout << "Nonce: " << newBlock.getNonce() << std::endl;
-        std::cout << std::endl;
-
-        buffer << "New block mined! " << std::endl;
-        buffer << "Difficulty: " << difficulty << std::endl;
-        buffer << "Hash: " << newBlock.getBlockHash() << std::endl;
-        buffer << "Nonce: " << newBlock.getNonce() << std::endl;
-        buffer << std::endl;
+        std::cout << newBlock << std::endl;
+        buffer << newBlock << std::endl;
 
         // write log to file
         std::ofstream fout;

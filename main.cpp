@@ -21,7 +21,6 @@ int main()
     createBlockchain(transactions, transactionsInBlock, difficulty, users);
 }
 // todo
-// readme
 // improve logs
 // sorting utxos
 // changing transaction utxo logic to go from largest to smallest
@@ -31,3 +30,4 @@ int main()
 // changing difficulty as we go on??
 // allowing the generated users to mine and get rewards??
 // refactor where possible(log output)
+// readme

@@ -26,6 +26,8 @@ public:
     void setTransactions(std::vector<Transaction> transactions);
 
     size_t getNonce();
+
+    friend std::ostream &operator<<(std::ostream &os, Block &block);
 };
 
 #endif
