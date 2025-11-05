@@ -1,4 +1,4 @@
-#include "include/lib.h"
+#include "../include/lib.h"
 
 std::vector<Transaction> transactionsToBlock(std::vector<Transaction> &transactions, int blockSize, std::stringstream &buffer)
 {
