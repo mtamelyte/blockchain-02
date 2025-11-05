@@ -16,7 +16,7 @@
 <h3>Adding to the blockchain</h3>
 <p>Once a new block is mined, it is added to the blockchain, and all the UTXOs that were used or created in the transactions of the block are finalized - used UTXOs are removed from the users' wallets, and new UTXOs are added.</p>
 <h3>Output</h3>
-<p>All the transaction generating and mining is logged and printed in the console, as well as text files, called 'user-log.txt', 'transaction-log.txt' and 'mining-log.txt'</p>
+<p>All the user and transaction generating and mining is logged and printed in the console, as well as text files, called 'user-log.txt', 'transaction-log.txt' and 'mining-log.txt'</p>
 <h2>AI help</h2>
 <p>Claude AI was used in the making of this in order to make the used hash more efficient, because the hash I made on my own was too slow for the mining process and would've taken forever. Claude AI was also used to help implement parallel mining, because I had had very little experience with OpenMP and there weren't many resources for my particular situation that I could find.</p>
 <h2>Screenshots</h2>
