@@ -147,6 +147,7 @@ std::vector<Transaction> generateTransactions(const int txAmount, std::vector<Us
                 remainingAmount = 0;
                 break;
             }
+            else
             {
                 utxo.second.used = true;
 
