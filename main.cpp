@@ -21,10 +21,3 @@ int main()
     std::vector<Transaction> transactions = generateTransactions(amountOfTransactions, users);
     createBlockchain(transactions, transactionsInBlock, difficulty, users);
 }
-// todo
-// implement reading from logs
-// make the program run continuously until the user decides to quit (objektinis core)
-// changing difficulty as we go on??
-// allowing the generated users to mine and get rewards??
-// refactor where possible(log output)
-// readme
