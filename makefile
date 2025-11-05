@@ -8,8 +8,3 @@ run:
 
 clean:
 	del *.o *.exe
-
-merkle:
-	g++ -c main.cpp merkleTree/MerkleTree.cpp
-	g++ -o main main.o MerkleTree.o
-	./main.exe

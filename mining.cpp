@@ -107,73 +107,78 @@ void removeTransactionsFromList(std::vector<Transaction> &transactionsInBlock, s
     }
 }
 
-Block mineBlock(std::string previousBlockHash, int difficulty, std::stringstream &buffer, std::vector<Transaction> &transactions, int blockSize, std::vector<User> &users)
+Block mineBlock(std::vector<std::vector<Transaction>> candidateBlocks, int maxAttempts, std::string &previousBlockHash, int difficulty, std::vector<User> &users, std::vector<Transaction> &transactions, std::stringstream &buffer)
 {
     std::atomic<bool> isFound = false;
+    Block minedBlock;
+
+    std::string diff = "";
+    diff.append(difficulty, '0');
+
+#pragma omp parallel num_threads(5) default(none) shared(candidateBlocks, maxAttempts, previousBlockHash, difficulty, diff, minedBlock, buffer, std::cout, transactions, isFound, users)
+    {
+
+        int threadId = omp_get_thread_num();
+        int numOfThreads = omp_get_num_threads();
+
+        std::vector<Transaction> txToBlock = candidateBlocks[threadId];
+
+        int nonce = threadId;
+        int attemptCount = 0;
+
+        while (!isFound)
+        {
+            attemptCount++;
+            if (attemptCount > maxAttempts)
+                break;
+
+            Block newBlock(previousBlockHash, MerkleTree(txToBlock).getRoot(), nonce += 5, difficulty);
+            std::string hash = newBlock.calculateBlockHash();
+
+            if (hash.substr(0, difficulty) == diff)
+            {
+                bool expected = false;
+                if (isFound.compare_exchange_strong(expected, true))
+                {
+#pragma omp critical
+                    {
+                        minedBlock = newBlock;
+                        moveUTXOs(txToBlock, users);
+                        removeTransactionsFromList(txToBlock, transactions);
+                    }
+                }
+                break;
+            }
+        }
+    }
+
+    if (isFound)
+        return minedBlock;
+    else
+    {
+        std::cout << "Failed to mine a block in " << maxAttempts << " attempts. ";
+        maxAttempts *= 2;
+        std::cout << "Retrying with " << maxAttempts << " attempts." << std::endl;
+        return mineBlock(candidateBlocks, maxAttempts, previousBlockHash, difficulty, users, transactions, buffer);
+    }
+}
+
+Block parallelMining(std::string previousBlockHash, int difficulty, std::stringstream &buffer, std::vector<Transaction> &transactions, int blockSize, std::vector<User> &users)
+{
     Block minedBlock;
     std::vector<std::vector<Transaction>> candidateBlocks;
 
     int maxAttempts = 1000;
 
-    std::string diff = "";
-    diff.append(difficulty, '0');
-
-#pragma omp parallel num_threads(5) default(none) shared(candidateBlocks, maxAttempts, previousBlockHash, difficulty, diff, minedBlock, buffer, std::cout, transactions, blockSize, isFound, users)
+#pragma omp parallel num_threads(5) default(none) shared(candidateBlocks, buffer, transactions, blockSize)
     {
-        std::vector<Transaction> txToBlock = transactionsToBlock(transactions, blockSize);
+        std::vector<Transaction> txToBlock = transactionsToBlock(transactions, blockSize, buffer);
 #pragma omp critical
         {
             candidateBlocks.push_back(txToBlock);
         }
     }
-
-multithreadMining:
-
-#pragma omp parallel num_threads(5) default(none) shared(candidateBlocks, maxAttempts, previousBlockHash, difficulty, diff, minedBlock, buffer, std::cout, transactions, blockSize, isFound, users)
-{
-
-    int threadId = omp_get_thread_num();
-    int numOfThreads = omp_get_num_threads();
-
-    std::vector<Transaction> txToBlock = candidateBlocks[threadId];
-
-    int nonce = threadId;
-    int attemptCount = 0;
-
-    while (!isFound)
-    {
-        attemptCount++;
-        if (attemptCount > maxAttempts)
-            break;
-
-        Block newBlock(previousBlockHash, MerkleTree(txToBlock).getRoot(), nonce += 5, difficulty);
-        std::string hash = newBlock.calculateBlockHash();
-
-        if (hash.substr(0, difficulty) == diff)
-        {
-            bool expected = false;
-            if (isFound.compare_exchange_strong(expected, true))
-            {
-#pragma omp critical
-                {
-                    std::cout << "Thread " << threadId << " won the race! (Total " << numOfThreads << " threads available)" << std::endl;
-                    minedBlock = newBlock;
-                    moveUTXOs(txToBlock, users);
-                    removeTransactionsFromList(txToBlock, transactions);
-                }
-            }
-            break;
-        }
-    }
-}
-
-    if (!isFound)
-    {
-        std::cout << "Failed to mine a block in " << maxAttempts << " attempts. ";
-        maxAttempts *= 2;
-        std::cout << "Retrying with " << maxAttempts << " attempts." << std::endl;
-        goto multithreadMining;
-    }
+    minedBlock = mineBlock(candidateBlocks, maxAttempts, previousBlockHash, difficulty, users, transactions, buffer);
     return minedBlock;
 }
 
@@ -194,7 +199,7 @@ void createBlockchain(std::vector<Transaction> &transactions, int blockSize, int
             previousBlockHash = blockchain.back().getBlockHash();
 
         std::cout << "Block #" << blockchain.size() << std::endl;
-        newBlock = mineBlock(previousBlockHash, difficulty, buffer, transactions, blockSize, users);
+        newBlock = parallelMining(previousBlockHash, difficulty, buffer, transactions, blockSize, users);
         blockchain.push_back(newBlock);
 
         std::cout << newBlock << std::endl;

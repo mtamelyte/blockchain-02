@@ -22,11 +22,8 @@ int main()
     createBlockchain(transactions, transactionsInBlock, difficulty, users);
 }
 // todo
-// sorting utxos
-// changing transaction utxo logic to go from largest to smallest
 // implement reading from logs
-// figure something out with the running out of utxos issue (maybe add a constraint that allows the transaction count to be up to 50 times larger than the user count?)
-// fix the goto in parallel mining
+// make the program run continuously until the user decides to quit (objektinis core)
 // changing difficulty as we go on??
 // allowing the generated users to mine and get rewards??
 // refactor where possible(log output)
