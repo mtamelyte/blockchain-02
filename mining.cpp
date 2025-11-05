@@ -146,8 +146,8 @@ multithreadMining: // goto is definitely not the optimal way to do this but idk 
         if (attemptCount > maxAttempts)
             break;
 
-        // creates a new block with the current nonce and hashes it
-        Block newBlock(previousBlockHash, merkleRootHash(txToBlock), nonce += 5, difficulty);
+                // creates a new block with the current nonce and hashes it
+        Block newBlock(previousBlockHash, MerkleTree(txToBlock).getRoot(), nonce += 5, difficulty);
         std::string hash = newBlock.calculateBlockHash();
 
         // checks if it matches the difficulty
