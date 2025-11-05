@@ -15,13 +15,13 @@ int main()
     std::cin >> transactionsInBlock;
     std::cout << "What should the mining difficulty be?" << std::endl;
     std::cin >> difficulty;
+    std::cout << std::endl;
 
     std::vector<User> users = generateUsers(amountOfUsers);
     std::vector<Transaction> transactions = generateTransactions(amountOfTransactions, users);
     createBlockchain(transactions, transactionsInBlock, difficulty, users);
 }
 // todo
-// improve logs
 // sorting utxos
 // changing transaction utxo logic to go from largest to smallest
 // implement reading from logs

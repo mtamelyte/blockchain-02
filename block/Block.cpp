@@ -37,6 +37,6 @@ size_t Block::getNonce()
 
 std::ostream &operator<<(std::ostream &os, Block &block)
 {
-    os << "New block mined! \nPrevious block hash: " << block.previousBlockHash << " \nTimestamp: " << block.timestamp << " \nVersion: " << block.version << " \nMerkle Root Hash: " << block.merkleRootHash << " \nNonce: " << block.nonce << " \nDifficulty: " << block.difficulty << "\n";
+    os << "New block mined! \nBlock hash: " << block.blockHash << "\nPrevious block hash: " << block.previousBlockHash << " \nTimestamp: " << block.timestamp << " \nVersion: " << block.version << " \nMerkle Root Hash: " << block.merkleRootHash << " \nNonce: " << block.nonce << " \nDifficulty: " << block.difficulty << "\n";
     return os;
 }

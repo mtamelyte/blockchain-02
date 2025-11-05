@@ -27,6 +27,9 @@ public:
 
     std::vector<UTXO> getUTXOs();
     void setUTXOs(std::vector<UTXO> utxos);
+    void sortUTXOs();
+
+    friend std::ostream &operator<<(std::ostream &os, User &user);
 };
 
 #endif

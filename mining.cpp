@@ -1,16 +1,18 @@
 #include "include/lib.h"
 
-std::vector<Transaction> transactionsToBlock(std::vector<Transaction> &transactions, int blockSize)
+std::vector<Transaction> transactionsToBlock(std::vector<Transaction> &transactions, int blockSize, std::stringstream &buffer)
 {
     std::vector<Transaction> transactionsToBlock;
     std::vector<bool> isPicked;
+
+    int listSize = std::min(blockSize, static_cast<int>(transactions.size()));
 
     isPicked.assign(transactions.size(), false);
 
     std::mt19937 mt(static_cast<long unsigned int>(std::chrono::high_resolution_clock::now().time_since_epoch().count()));
     std::uniform_int_distribution<> tx(0, transactions.size() - 1);
 
-    for (int i = 0; i < blockSize; i++)
+    for (int i = 0; i < listSize; i++)
     {
         int it = tx(mt);
 
@@ -22,7 +24,7 @@ std::vector<Transaction> transactionsToBlock(std::vector<Transaction> &transacti
 
             if (txId != transactions[it].getTransactionId())
             {
-                std::cout << "Error: transaction ID doesn't match. Transaction #" << tx << " skipped." << std::endl;
+                buffer << "Error: transaction ID doesn't match. Transaction #" << tx << " skipped." << std::endl;
                 continue;
             }
 
@@ -113,7 +115,6 @@ Block mineBlock(std::string previousBlockHash, int difficulty, std::stringstream
 
     int maxAttempts = 1000;
 
-    // creates the difficulty (how many zeroes in a row is required)
     std::string diff = "";
     diff.append(difficulty, '0');
 
@@ -126,7 +127,7 @@ Block mineBlock(std::string previousBlockHash, int difficulty, std::stringstream
         }
     }
 
-multithreadMining: // goto is definitely not the optimal way to do this but idk how calling functions with pragma omp directives in them works lmao
+multithreadMining:
 
 #pragma omp parallel num_threads(5) default(none) shared(candidateBlocks, maxAttempts, previousBlockHash, difficulty, diff, minedBlock, buffer, std::cout, transactions, blockSize, isFound, users)
 {
@@ -136,7 +137,6 @@ multithreadMining: // goto is definitely not the optimal way to do this but idk 
 
     std::vector<Transaction> txToBlock = candidateBlocks[threadId];
 
-    // initializes proof of work
     int nonce = threadId;
     int attemptCount = 0;
 
@@ -146,14 +146,11 @@ multithreadMining: // goto is definitely not the optimal way to do this but idk 
         if (attemptCount > maxAttempts)
             break;
 
-        // creates a new block with the current nonce and hashes it
         Block newBlock(previousBlockHash, MerkleTree(txToBlock).getRoot(), nonce += 5, difficulty);
         std::string hash = newBlock.calculateBlockHash();
 
-        // checks if it matches the difficulty
         if (hash.substr(0, difficulty) == diff)
         {
-            // if so, the mining function ends
             bool expected = false;
             if (isFound.compare_exchange_strong(expected, true))
             {
@@ -182,7 +179,6 @@ multithreadMining: // goto is definitely not the optimal way to do this but idk 
 
 void createBlockchain(std::vector<Transaction> &transactions, int blockSize, int difficulty, std::vector<User> &users)
 {
-    // initializes the blockchain
     std::list<Block> blockchain;
 
     std::stringstream buffer;
@@ -204,7 +200,6 @@ void createBlockchain(std::vector<Transaction> &transactions, int blockSize, int
         std::cout << newBlock << std::endl;
         buffer << newBlock << std::endl;
 
-        // write log to file
         std::ofstream fout;
         fout.open("mining-log.txt");
         fout << buffer.str();

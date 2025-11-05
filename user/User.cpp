@@ -67,3 +67,21 @@ void User::setUTXOs(std::vector<UTXO> utxos)
 {
     this->utxos = utxos;
 }
+
+void User::sortUTXOs()
+{
+    std::sort(this->utxos.begin(), this->utxos.end(), [](UTXO a, UTXO b)
+              { return a.amount > b.amount; });
+}
+
+std::ostream &operator<<(std::ostream &os, User &user)
+{
+    os << user.name << "\nPublic key: " << user.publicKey << "\nUTXOs: ";
+    for (UTXO &utxo : user.utxos)
+    {
+        os << "\n"
+           << utxo.id << " " << utxo.amount;
+    }
+    os << "\n";
+    return os;
+}

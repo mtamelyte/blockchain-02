@@ -9,7 +9,7 @@ std::string generateSalt()
 
     for (int i = 0; i < 10; i++)
     {
-        salt += (char)utfCode(mt); // generate a random UTF-8 code and change it to a corresponding symbol
+        salt += (char)utfCode(mt);
     }
 
     return salt;
@@ -18,19 +18,21 @@ std::string generateSalt()
 std::vector<User> generateUsers(int userAmount)
 {
     std::vector<User> users;
+    int usersGenerated = 0;
+
+    std::stringstream buffer;
+
     for (int i = 1; i <= userAmount; i++)
     {
         std::mt19937 mt(static_cast<long unsigned int>(std::chrono::high_resolution_clock::now().time_since_epoch().count()));
         std::uniform_int_distribution<> amt(50, 500);
 
-        const std::string name = "User_" + std::to_string(i); // create a username like "User_45"
+        const std::string name = "User_" + std::to_string(i);
 
-        // create a public key
         const std::string preHashPublicKey = "User_" + std::to_string(i) + generateSalt();
         const std::string publicKey = hash(preHashPublicKey);
 
-        User user(name, publicKey); // construct a user with the specified username and public key
-
+        User user(name, publicKey);
         // generate 50 UTXOs for each user
         for (int j = 0; j < 50; j++)
         {
@@ -39,7 +41,17 @@ std::vector<User> generateUsers(int userAmount)
             user.addUTXO(utxo);
         }
         users.push_back(user);
+        buffer << user << std::endl;
+        usersGenerated++;
     }
+
+    std::ofstream fout;
+    fout.open("user-log.txt");
+    fout << buffer.str();
+    fout.close();
+
+    std::cout << usersGenerated << " users generated. Full log available in 'user-log.txt'" << std::endl;
+    std::cout << std::endl;
 
     return users;
 }
@@ -47,6 +59,7 @@ std::vector<User> generateUsers(int userAmount)
 std::vector<Transaction> generateTransactions(const int txAmount, std::vector<User> &users)
 {
     std::vector<Transaction> transactions;
+    int transactionsGenerated = 0;
 
     // prepare for writing to file
     std::stringstream buffer;
@@ -61,10 +74,9 @@ std::vector<Transaction> generateTransactions(const int txAmount, std::vector<Us
         int senderIt = num(mt);
         int receiverIt = num(mt);
 
-        // ensure the sender and the receiver aren't the same person and the sender has money they can transfer
-        while (senderIt == receiverIt || users[senderIt].getBalance() == 0)
+        // ensure the sender and the receiver aren't the same person
+        while (senderIt == receiverIt)
         {
-            // if they are, regenerate the sender
             senderIt = num(mt);
         }
 
@@ -75,14 +87,18 @@ std::vector<Transaction> generateTransactions(const int txAmount, std::vector<Us
         // randomly generate an amount to transfer
         double amountToTransfer = amt(mt);
 
-        // ensure the sender has enough for the transfer
-        while (amountToTransfer > sender.getBalance())
+        if (sender.getBalance() < amountToTransfer)
         {
-            // if they don't, pick a new amount to transfer
-            amountToTransfer = amt(mt);
+            buffer << "Transaction #" << i + 1 << std::endl;
+            buffer << sender.getName() << " does not have enough for the transaction." << std::endl;
+            buffer << "The amount to transfer is " << amountToTransfer << ", while " << sender.getName() << " only has " << sender.getBalance() << std::endl;
+            buffer << "Transaction skipped." << std::endl;
+            buffer << std::endl;
+            continue;
         }
 
         // get the existing UTXOs
+        sender.sortUTXOs();
         std::vector<UTXO> utxos = sender.getUTXOs();
         double remainingAmount = amountToTransfer;
 
@@ -91,10 +107,6 @@ std::vector<Transaction> generateTransactions(const int txAmount, std::vector<Us
         std::string txId = hash(idPreHash);
 
         std::vector<UTXO> output;
-
-        std::cout << "Transaction #" << i + 1 << std::endl;
-        std::cout << "Sender: " << sender.getName() << ", receiver: " << receiver.getName() << ". Amount transferred: " << amountToTransfer << std::endl;
-        std::cout << "Inputs: " << std::endl;
 
         buffer << "Transaction #" << i + 1 << std::endl;
         buffer << "Sender: " << sender.getName() << ", receiver: " << receiver.getName() << ". Amount transferred: " << amountToTransfer << std::endl;
@@ -113,7 +125,6 @@ std::vector<Transaction> generateTransactions(const int txAmount, std::vector<Us
                 utxo.used = true;
                 utxo.txId = txId;
 
-                std::cout << "UTXO ID: " << utxo.id << ", value: " << utxo.amount << std::endl;
                 buffer << "UTXO ID: " << utxo.id << ", value: " << utxo.amount << std::endl;
 
                 UTXO newUtxo(receiver.getName(), receiver.getPublicKey(), utxo.amount, txId, 0);
@@ -128,7 +139,6 @@ std::vector<Transaction> generateTransactions(const int txAmount, std::vector<Us
                 utxo.used = true;
                 utxo.txId = txId;
 
-                std::cout << "UTXO ID: " << utxo.id << ", value: " << utxo.amount << std::endl;
                 buffer << "UTXO ID: " << utxo.id << ", value: " << utxo.amount << std::endl;
 
                 UTXO newUtxo(receiver.getName(), receiver.getPublicKey(), utxo.amount, txId, 0);
@@ -144,7 +154,6 @@ std::vector<Transaction> generateTransactions(const int txAmount, std::vector<Us
                 utxo.used = true;
                 utxo.txId = txId;
 
-                std::cout << "UTXO ID: " << utxo.id << ", value: " << utxo.amount << std::endl;
                 buffer << "UTXO ID: " << utxo.id << ", value: " << utxo.amount << std::endl;
 
                 UTXO newUtxo(receiver.getName(), receiver.getPublicKey(), remainingAmount, txId, 0);
@@ -158,18 +167,14 @@ std::vector<Transaction> generateTransactions(const int txAmount, std::vector<Us
             }
         }
 
-        std::cout << "Outputs: " << std::endl;
         buffer << "Outputs:" << std::endl;
         for (auto utxo : output)
         {
-            std::cout << "UTXO ID: " << utxo.id << ", value: " << utxo.amount;
             buffer << "UTXO ID: " << utxo.id << ", value: " << utxo.amount;
             if (utxo.changeFlag)
             {
-                std::cout << " (change)";
                 buffer << " (change)";
             }
-            std::cout << std::endl;
             buffer << std::endl;
         }
 
@@ -179,12 +184,12 @@ std::vector<Transaction> generateTransactions(const int txAmount, std::vector<Us
         // construct a transaction with all the generated data and add it to the list
         Transaction tx(txId, sender.getPublicKey(), receiver.getPublicKey(), amountToTransfer, output);
         transactions.push_back(tx);
+        transactionsGenerated++;
 
         // ensure the changes are updated in the list of users as well
         users[senderIt] = sender;
         users[receiverIt] = receiver;
 
-        std::cout << std::endl;
         buffer << std::endl;
     }
 
@@ -192,6 +197,9 @@ std::vector<Transaction> generateTransactions(const int txAmount, std::vector<Us
     fout.open("transaction-log.txt");
     fout << buffer.str();
     fout.close();
+
+    std::cout << transactionsGenerated << " valid transactions generated. Full log available in 'transaction-log.txt'." << std::endl;
+    std::cout << std::endl;
 
     return transactions;
 }
