@@ -1,12 +1,13 @@
 #include "Transaction.h"
 
-Transaction::Transaction(std::string transactionId, std::string senderId, std::string receiverId, double amount, std::vector<UTXO> outputs)
+Transaction::Transaction(std::string transactionId, std::string senderId, std::string receiverId, double amount, std::vector<std::string> inputs, std::unordered_map<std::string, UTXO> outputs)
 {
     this->transactionId = transactionId;
     this->senderId = senderId;
     this->receiverId = receiverId;
     this->amount = amount;
     this->outputs = outputs;
+    this->inputs = inputs;
 }
 
 std::string Transaction::getTransactionId() const
@@ -14,9 +15,14 @@ std::string Transaction::getTransactionId() const
     return this->transactionId;
 }
 
-std::vector<UTXO> Transaction::getOutputs()
+std::unordered_map<std::string, UTXO> Transaction::getOutputs()
 {
     return this->outputs;
+}
+
+std::vector<std::string> Transaction::getInputs()
+{
+    return this->inputs;
 }
 
 std::string Transaction::getSenderId()

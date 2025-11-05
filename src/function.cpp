@@ -15,6 +15,13 @@ std::string generateSalt()
     return salt;
 }
 
+std::string generateUTXOId(std::string name, std::string key, int amount)
+{
+    std::string idToHash = name + key + std::to_string(amount) + generateSalt();
+    std::string utxoId = hash(idToHash);
+    return utxoId;
+}
+
 std::vector<User> generateUsers(int userAmount)
 {
     std::vector<User> users;
@@ -37,8 +44,9 @@ std::vector<User> generateUsers(int userAmount)
         for (int j = 0; j < 50; j++)
         {
             int amount = amt(mt);
-            UTXO utxo(user.getName(), user.getPublicKey(), amount, "", 0);
-            user.addUTXO(utxo);
+
+            UTXO utxo(amount, 0);
+            user.addUTXO(generateUTXOId(name, publicKey, amount), utxo);
         }
 
         users.push_back(user);
@@ -93,14 +101,14 @@ std::vector<Transaction> generateTransactions(const int txAmount, std::vector<Us
             continue;
         }
 
-        sender.sortUTXOs();
-        std::vector<UTXO> utxos = sender.getUTXOs();
+        std::unordered_map<std::string, UTXO> utxos = sender.getUTXOs();
         double remainingAmount = amountToTransfer;
 
         std::string idPreHash = sender.getPublicKey() + receiver.getPublicKey() + std::to_string(amountToTransfer);
         std::string txId = hash(idPreHash);
 
-        std::vector<UTXO> output;
+        std::unordered_map<std::string, UTXO> output;
+        std::vector<std::string> input;
 
         buffer << "Transaction #" << i + 1 << std::endl;
         buffer << "Sender: " << sender.getName() << ", receiver: " << receiver.getName() << ". Amount transferred: " << amountToTransfer << std::endl;
@@ -108,46 +116,49 @@ std::vector<Transaction> generateTransactions(const int txAmount, std::vector<Us
 
         for (auto &utxo : utxos)
         {
-            if (utxo.used)
+            if (utxo.second.used)
             {
                 continue;
             }
-            else if (utxo.amount < remainingAmount)
+            else if (utxo.second.amount < remainingAmount)
             {
-                utxo.used = true;
-                utxo.txId = txId;
+                utxo.second.used = true;
 
-                buffer << "UTXO ID: " << utxo.id << ", value: " << utxo.amount << std::endl;
+                input.push_back(utxo.first);
 
-                UTXO newUtxo(receiver.getName(), receiver.getPublicKey(), utxo.amount, txId, 0);
-                output.push_back(newUtxo);
+                buffer << "UTXO ID: " << utxo.first << ", value: " << utxo.second.amount << std::endl;
 
-                remainingAmount -= utxo.amount;
+                UTXO newUtxo(utxo.second.amount, 0);
+                output.insert({generateUTXOId(receiver.getName(), receiver.getPublicKey(), utxo.second.amount), newUtxo});
+
+                remainingAmount -= utxo.second.amount;
             }
-            else if (utxo.amount == remainingAmount)
+            else if (utxo.second.amount == remainingAmount)
             {
-                utxo.used = true;
-                utxo.txId = txId;
+                utxo.second.used = true;
 
-                buffer << "UTXO ID: " << utxo.id << ", value: " << utxo.amount << std::endl;
+                input.push_back(utxo.first);
 
-                UTXO newUtxo(receiver.getName(), receiver.getPublicKey(), utxo.amount, txId, 0);
-                output.push_back(newUtxo);
+                buffer << "UTXO ID: " << utxo.first << ", value: " << utxo.second.amount << std::endl;
+
+                UTXO newUtxo(utxo.second.amount, 0);
+                output.insert({generateUTXOId(receiver.getName(), receiver.getPublicKey(), utxo.second.amount), newUtxo});
 
                 remainingAmount = 0;
                 break;
             }
             {
-                utxo.used = true;
-                utxo.txId = txId;
+                utxo.second.used = true;
 
-                buffer << "UTXO ID: " << utxo.id << ", value: " << utxo.amount << std::endl;
+                input.push_back(utxo.first);
 
-                UTXO newUtxo(receiver.getName(), receiver.getPublicKey(), remainingAmount, txId, 0);
-                UTXO change(sender.getName(), sender.getPublicKey(), utxo.amount - remainingAmount, txId, 1);
+                buffer << "UTXO ID: " << utxo.first << ", value: " << utxo.second.amount << std::endl;
 
-                output.push_back(newUtxo);
-                output.push_back(change);
+                UTXO newUtxo(remainingAmount, 0);
+                UTXO change(utxo.second.amount - remainingAmount, 1);
+
+                output.insert({generateUTXOId(receiver.getName(), receiver.getPublicKey(), remainingAmount), newUtxo});
+                output.insert({generateUTXOId(sender.getName(), sender.getPublicKey(), utxo.second.amount - remainingAmount), change});
 
                 remainingAmount = 0;
                 break;
@@ -157,8 +168,8 @@ std::vector<Transaction> generateTransactions(const int txAmount, std::vector<Us
         buffer << "Outputs:" << std::endl;
         for (auto utxo : output)
         {
-            buffer << "UTXO ID: " << utxo.id << ", value: " << utxo.amount;
-            if (utxo.changeFlag)
+            buffer << "UTXO ID: " << utxo.first << ", value: " << utxo.second.amount;
+            if (utxo.second.changeFlag)
             {
                 buffer << " (change)";
             }
@@ -167,7 +178,7 @@ std::vector<Transaction> generateTransactions(const int txAmount, std::vector<Us
 
         sender.setUTXOs(utxos);
 
-        Transaction tx(txId, sender.getPublicKey(), receiver.getPublicKey(), amountToTransfer, output);
+        Transaction tx(txId, sender.getPublicKey(), receiver.getPublicKey(), amountToTransfer, input, output);
         transactions.push_back(tx);
         transactionsGenerated++;
 

@@ -3,13 +3,14 @@
 
 #include <string>
 #include <vector>
+#include <unordered_map>
 #include "../include/utxo.h"
 class User
 {
 private:
     std::string name;
     std::string publicKey;
-    std::vector<UTXO> utxos;
+    std::unordered_map<std::string, UTXO> utxos;
 
 public:
     User(std::string name, std::string publicKey);
@@ -22,12 +23,11 @@ public:
 
     double getBalance() const;
 
-    void addUTXO(UTXO utxo);
+    void addUTXO(std::string id, UTXO utxo);
     void removeUTXO(std::string id);
 
-    std::vector<UTXO> getUTXOs();
-    void setUTXOs(std::vector<UTXO> utxos);
-    void sortUTXOs();
+    std::unordered_map<std::string, UTXO> getUTXOs();
+    void setUTXOs(std::unordered_map<std::string, UTXO> utxos);
 
     friend std::ostream &operator<<(std::ostream &os, User &user);
 };

@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <unordered_map>
 #include "../include/utxo.h"
 class Transaction
 {
@@ -11,13 +12,15 @@ private:
     std::string senderId;
     std::string receiverId;
     double amount;
-    std::vector<UTXO> outputs;
+    std::unordered_map<std::string, UTXO> outputs;
+    std::vector<std::string> inputs;
 
 public:
-    Transaction(std::string transactionId, std::string senderId, std::string receiverId, double amount, std::vector<UTXO> outputs);
+    Transaction(std::string transactionId, std::string senderId, std::string receiverId, double amount, std::vector<std::string> inputs, std::unordered_map<std::string, UTXO> outputs);
 
     std::string getTransactionId() const;
-    std::vector<UTXO> getOutputs();
+    std::unordered_map<std::string, UTXO> getOutputs();
+    std::vector<std::string> getInputs();
     std::string getSenderId();
     std::string getReceiverId();
     double getAmount();

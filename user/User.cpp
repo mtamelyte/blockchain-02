@@ -31,56 +31,41 @@ std::string User::getPublicKey() const
 double User::getBalance() const
 {
     double balance = 0;
-    for (UTXO utxo : utxos)
+    for (auto utxo : utxos)
     {
-        if (utxo.used == false)
-            balance += utxo.amount;
+        if (utxo.second.used == false)
+            balance += utxo.second.amount;
     }
     return balance;
 }
 
-void User::addUTXO(UTXO utxo)
+void User::addUTXO(std::string id, UTXO utxo)
 {
-    this->utxos.push_back(utxo);
+    this->utxos.insert({id, utxo});
 }
 
 void User::removeUTXO(std::string id)
 {
-    std::vector<UTXO>::iterator it = utxos.begin();
-    for (auto utxo : utxos)
-    {
-        if (utxo.id == id)
-        {
-            break;
-        }
-        it++;
-    }
-    utxos.erase(it);
+    utxos.erase(id);
 }
 
-std::vector<UTXO> User::getUTXOs()
+std::unordered_map<std::string, UTXO> User::getUTXOs()
 {
     return this->utxos;
 }
 
-void User::setUTXOs(std::vector<UTXO> utxos)
+void User::setUTXOs(std::unordered_map<std::string, UTXO> utxos)
 {
     this->utxos = utxos;
-}
-
-void User::sortUTXOs()
-{
-    std::sort(this->utxos.begin(), this->utxos.end(), [](UTXO a, UTXO b)
-              { return a.amount > b.amount; });
 }
 
 std::ostream &operator<<(std::ostream &os, User &user)
 {
     os << user.name << "\nPublic key: " << user.publicKey << "\nUTXOs: ";
-    for (UTXO &utxo : user.utxos)
+    for (auto &utxo : user.utxos)
     {
         os << "\n"
-           << utxo.id << " " << utxo.amount;
+           << utxo.first << " " << utxo.second.amount;
     }
     os << "\n";
     return os;

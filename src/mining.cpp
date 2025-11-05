@@ -68,27 +68,23 @@ void moveUTXOs(std::vector<Transaction> &txToBlock, std::vector<User> &users)
     for (auto tx : txToBlock)
     {
         User &sender = users[findUser(users, tx.getSenderId())];
-
-        std::vector<UTXO> utxos = sender.getUTXOs();
-        for (auto utxo : utxos)
-        {
-            if (utxo.txId == tx.getTransactionId() && utxo.used)
-            {
-                sender.removeUTXO(utxo.id);
-            }
-        }
-
         User &receiver = users[findUser(users, tx.getReceiverId())];
 
-        std::vector<UTXO> outputs = tx.getOutputs();
+        std::vector<std::string> inputs = tx.getInputs();
+        for (auto utxo : inputs)
+        {
+            sender.removeUTXO(utxo);
+        }
+
+        std::unordered_map<std::string, UTXO> outputs = tx.getOutputs();
         for (auto utxo : outputs)
         {
-            if (utxo.changeFlag)
+            if (utxo.second.changeFlag)
             {
-                sender.addUTXO(utxo);
+                sender.addUTXO(utxo.first, utxo.second);
             }
             else
-                receiver.addUTXO(utxo);
+                receiver.addUTXO(utxo.first, utxo.second);
         }
     }
 }
@@ -178,8 +174,7 @@ Block parallelMining(std::string previousBlockHash, int difficulty, std::strings
 
 void createBlockchain(std::vector<Transaction> &transactions, int blockSize, int difficulty, std::vector<User> &users)
 {
-    std::list<Block> blockchain;
-
+    std::vector<Block> blockchain;
     std::stringstream buffer;
 
     while (!transactions.empty())
