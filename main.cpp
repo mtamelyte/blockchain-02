@@ -21,12 +21,11 @@ int main()
     createBlockchain(transactions, transactionsInBlock, difficulty, users);
 }
 // todo
-// mining for a limited time/try amount
 // sufixint merkle tree (padaryt duomenu struktura ne tsg funkcija)
 // readme
 // sorting utxos
 // changing transaction utxo logic to go from largest to smallest
-// improve transaction picking (pick at random instead of randomizing first and then going in a row)
+// fix the goto in parallel mining
 // changing difficulty as we go on??
 // allowing the generated users to mine and get rewards??
 // refactor where possible(log output)

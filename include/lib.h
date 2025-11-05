@@ -3,6 +3,7 @@
 #include "../block/Block.h"
 #include "../transaction/Transaction.h"
 #include "../user/User.h"
+#include "../merkleTree/MerkleTree.h"
 #include <chrono>
 #include <random>
 #include <iostream>
