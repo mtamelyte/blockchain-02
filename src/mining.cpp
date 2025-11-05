@@ -197,16 +197,19 @@ void createBlockchain(std::vector<Transaction> &transactions, int blockSize, int
             previousBlockHash.append(64, '0');
         else
             previousBlockHash = blockchain.back().getBlockHash();
-
-        std::cout << "Block #" << blockchain.size() << std::endl;
         newBlock = parallelMining(previousBlockHash, difficulty, buffer, transactions, blockSize, users);
         blockchain.push_back(newBlock);
+
+        std::cout << "New block mined!" << std::endl;
+
+        std::cout << "Block #" << blockchain.size() << std::endl;
+        buffer << "Block #" << blockchain.size() << std::endl;
 
         std::cout << newBlock << std::endl;
         buffer << newBlock << std::endl;
 
         std::ofstream fout;
-        fout.open("mining-log.txt");
+        fout.open("logs/mining-log.txt");
         fout << buffer.str();
         fout.close();
     }

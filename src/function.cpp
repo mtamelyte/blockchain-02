@@ -46,7 +46,7 @@ std::vector<User> generateUsers(int userAmount)
     }
 
     std::ofstream fout;
-    fout.open("user-log.txt");
+    fout.open("logs/user-log.txt");
     fout << buffer.str();
     fout.close();
 
@@ -194,7 +194,7 @@ std::vector<Transaction> generateTransactions(const int txAmount, std::vector<Us
     }
 
     std::ofstream fout;
-    fout.open("transaction-log.txt");
+    fout.open("logs/transaction-log.txt");
     fout << buffer.str();
     fout.close();
 
