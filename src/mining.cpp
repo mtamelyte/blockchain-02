@@ -18,7 +18,6 @@ std::vector<Transaction> transactionsToBlock(std::vector<Transaction> &transacti
 
         if (!isPicked[it])
         {
-            // verify transaction id first
             std::string idPreHash = transactions[it].getSenderId() + transactions[it].getReceiverId() + std::to_string(transactions[it].getAmount());
             std::string txId = hash(idPreHash);
 
@@ -38,7 +37,6 @@ std::vector<Transaction> transactionsToBlock(std::vector<Transaction> &transacti
     return transactionsToBlock;
 }
 
-// from https://stackoverflow.com/questions/15517991/search-a-vector-of-objects-by-object-attribute
 int findUser(std::vector<User> &users, std::string userId)
 {
     auto it = find_if(users.begin(), users.end(), [&userId](const User &obj)
@@ -67,10 +65,8 @@ int findTransaction(std::vector<Transaction> &transactions, std::string transact
 
 void moveUTXOs(std::vector<Transaction> &txToBlock, std::vector<User> &users)
 {
-    // go through all the transactions that were included in the block
     for (auto tx : txToBlock)
     {
-        // get the sender
         User &sender = users[findUser(users, tx.getSenderId())];
 
         std::vector<UTXO> utxos = sender.getUTXOs();
@@ -82,10 +78,8 @@ void moveUTXOs(std::vector<Transaction> &txToBlock, std::vector<User> &users)
             }
         }
 
-        // get the receiver
         User &receiver = users[findUser(users, tx.getReceiverId())];
 
-        // go through all the outputs of a transaction and move them to the appropriate receivers
         std::vector<UTXO> outputs = tx.getOutputs();
         for (auto utxo : outputs)
         {

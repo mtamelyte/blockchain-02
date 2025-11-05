@@ -30,5 +30,5 @@
     <li>Open the command prompt on your computer</li>
     <li>Navigate to the directory you cloned this repository into
     <li>Type "make" into your command prompt to build the project</li>
-    <li>Type "make run" into your command prompt to run the program - this will start the program and you will be able to see the generated transactions and mined blocks in your console.</li>
+    <li>Type "make run" into your command prompt to run the program - this will start the program and you will be able to see the generated transactions and mined blocks in the 'logs' folder.</li>
 </ol>
