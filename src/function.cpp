@@ -33,13 +33,14 @@ std::vector<User> generateUsers(int userAmount)
         const std::string publicKey = hash(preHashPublicKey);
 
         User user(name, publicKey);
-        // generate 50 UTXOs for each user
+
         for (int j = 0; j < 50; j++)
         {
             int amount = amt(mt);
             UTXO utxo(user.getName(), user.getPublicKey(), amount, "", 0);
             user.addUTXO(utxo);
         }
+
         users.push_back(user);
         buffer << user << std::endl;
         usersGenerated++;
@@ -61,7 +62,6 @@ std::vector<Transaction> generateTransactions(const int txAmount, std::vector<Us
     std::vector<Transaction> transactions;
     int transactionsGenerated = 0;
 
-    // prepare for writing to file
     std::stringstream buffer;
 
     std::mt19937 mt(static_cast<long unsigned int>(std::chrono::high_resolution_clock::now().time_since_epoch().count()));
@@ -70,21 +70,17 @@ std::vector<Transaction> generateTransactions(const int txAmount, std::vector<Us
 
     for (int i = 0; i < txAmount; i++)
     {
-        // randomly pick a sender and a receiver
         int senderIt = num(mt);
         int receiverIt = num(mt);
 
-        // ensure the sender and the receiver aren't the same person
         while (senderIt == receiverIt)
         {
             senderIt = num(mt);
         }
 
-        // get the sender and receiver as objects
         User sender = users[senderIt];
         User receiver = users[receiverIt];
 
-        // randomly generate an amount to transfer
         double amountToTransfer = amt(mt);
 
         if (sender.getBalance() < amountToTransfer)
@@ -97,12 +93,10 @@ std::vector<Transaction> generateTransactions(const int txAmount, std::vector<Us
             continue;
         }
 
-        // get the existing UTXOs
         sender.sortUTXOs();
         std::vector<UTXO> utxos = sender.getUTXOs();
         double remainingAmount = amountToTransfer;
 
-        // create transaction id - a hash of all other data
         std::string idPreHash = sender.getPublicKey() + receiver.getPublicKey() + std::to_string(amountToTransfer);
         std::string txId = hash(idPreHash);
 
@@ -114,12 +108,10 @@ std::vector<Transaction> generateTransactions(const int txAmount, std::vector<Us
 
         for (auto &utxo : utxos)
         {
-            // if the current utxo is already used in a different transaction, move on
             if (utxo.used)
             {
                 continue;
             }
-            // if the current utxo is not enough to close the transaction, move it to the receiver, deduct the amount and keep going
             else if (utxo.amount < remainingAmount)
             {
                 utxo.used = true;
@@ -132,8 +124,6 @@ std::vector<Transaction> generateTransactions(const int txAmount, std::vector<Us
 
                 remainingAmount -= utxo.amount;
             }
-
-            // if the current utxo is exactly enough, move it to the receiver and break the loop
             else if (utxo.amount == remainingAmount)
             {
                 utxo.used = true;
@@ -147,9 +137,6 @@ std::vector<Transaction> generateTransactions(const int txAmount, std::vector<Us
                 remainingAmount = 0;
                 break;
             }
-
-            // if the current utxo is bigger than the remaining amount, remove it, split it into the needed sum and the remainder and add them back to respective users
-            else
             {
                 utxo.used = true;
                 utxo.txId = txId;
@@ -178,15 +165,12 @@ std::vector<Transaction> generateTransactions(const int txAmount, std::vector<Us
             buffer << std::endl;
         }
 
-        // update the utxo status in the sender's data
         sender.setUTXOs(utxos);
 
-        // construct a transaction with all the generated data and add it to the list
         Transaction tx(txId, sender.getPublicKey(), receiver.getPublicKey(), amountToTransfer, output);
         transactions.push_back(tx);
         transactionsGenerated++;
 
-        // ensure the changes are updated in the list of users as well
         users[senderIt] = sender;
         users[receiverIt] = receiver;
 
