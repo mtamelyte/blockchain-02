@@ -1,42 +1,5 @@
 #include "../include/lib.h"
 
-std::vector<Transaction> transactionsToBlock(std::vector<Transaction> &transactions, int blockSize, std::stringstream &buffer)
-{
-    std::vector<Transaction> transactionsToBlock;
-    std::vector<bool> isPicked;
-
-    int listSize = std::min(blockSize, static_cast<int>(transactions.size()));
-
-    isPicked.assign(transactions.size(), false);
-
-    std::mt19937 mt(static_cast<long unsigned int>(std::chrono::high_resolution_clock::now().time_since_epoch().count()));
-    std::uniform_int_distribution<> tx(0, transactions.size() - 1);
-
-    for (int i = 0; i < listSize; i++)
-    {
-        int it = tx(mt);
-
-        if (!isPicked[it])
-        {
-            std::string idPreHash = transactions[it].getSenderId() + transactions[it].getReceiverId() + std::to_string(transactions[it].getAmount());
-            std::string txId = hash(idPreHash);
-
-            if (txId != transactions[it].getTransactionId())
-            {
-                buffer << "Error: transaction ID doesn't match. Transaction #" << tx << " skipped." << std::endl;
-                continue;
-            }
-
-            transactionsToBlock.push_back(transactions[it]);
-            isPicked[it] = true;
-        }
-        else
-            i--;
-    }
-
-    return transactionsToBlock;
-}
-
 int findUser(std::vector<User> &users, std::string userId)
 {
     auto it = find_if(users.begin(), users.end(), [&userId](const User &obj)
@@ -61,6 +24,51 @@ int findTransaction(std::vector<Transaction> &transactions, std::string transact
 
         return index;
     }
+}
+
+std::vector<Transaction> transactionsToBlock(std::vector<Transaction> &transactions, int blockSize, std::stringstream &buffer, std::vector<User> &users)
+{
+    std::vector<Transaction> transactionsToBlock;
+    std::vector<bool> isPicked;
+
+    int listSize = std::min(blockSize, static_cast<int>(transactions.size()));
+
+    isPicked.assign(transactions.size(), false);
+
+    std::mt19937 mt(static_cast<long unsigned int>(std::chrono::high_resolution_clock::now().time_since_epoch().count()));
+    std::uniform_int_distribution<> tx(0, transactions.size() - 1);
+
+    for (int i = 0; i < listSize; i++)
+    {
+        int it = tx(mt);
+
+        if (!isPicked[it])
+        {
+            std::string idPreHash = transactions[it].getSenderId() + transactions[it].getReceiverId() + std::to_string(transactions[it].getAmount());
+            std::string txId = hash(idPreHash);
+
+            if (txId != transactions[it].getTransactionId())
+            {
+                buffer << "Error: transaction ID doesn't match. Transaction #" << tx << " skipped." << std::endl;
+                User &sender = users[findUser(users, transactions[it].getSenderId())];
+                std::unordered_map<std::string, UTXO> utxos = sender.getUTXOs();
+                for (auto input : transactions[it].getInputs())
+                {
+                    UTXO &utxo = utxos.find(input)->second;
+                    utxo.used = false;
+                }
+                sender.setUTXOs(utxos);
+                continue;
+            }
+
+            transactionsToBlock.push_back(transactions[it]);
+            isPicked[it] = true;
+        }
+        else
+            i--;
+    }
+
+    return transactionsToBlock;
 }
 
 void moveUTXOs(std::vector<Transaction> &txToBlock, std::vector<User> &users)
@@ -160,9 +168,9 @@ Block parallelMining(std::string previousBlockHash, int difficulty, std::strings
 
     int maxAttempts = 1000;
 
-#pragma omp parallel num_threads(5) default(none) shared(candidateBlocks, buffer, transactions, blockSize)
+#pragma omp parallel num_threads(5) default(none) shared(candidateBlocks, buffer, transactions, blockSize, users)
     {
-        std::vector<Transaction> txToBlock = transactionsToBlock(transactions, blockSize, buffer);
+        std::vector<Transaction> txToBlock = transactionsToBlock(transactions, blockSize, buffer, users);
 #pragma omp critical
         {
             candidateBlocks.push_back(txToBlock);
