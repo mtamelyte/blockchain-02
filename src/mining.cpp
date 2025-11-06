@@ -140,7 +140,9 @@ Block mineBlock(std::vector<std::vector<Transaction>> candidateBlocks, int maxAt
                 {
 #pragma omp critical
                     {
+                        std::cout << "Thread " << threadId << " mined a new block!" << std::endl;
                         minedBlock = newBlock;
+                        minedBlock.setTransactions(txToBlock);
                         moveUTXOs(txToBlock, users);
                         removeTransactionsFromList(txToBlock, transactions);
                     }
@@ -196,8 +198,6 @@ void createBlockchain(std::vector<Transaction> &transactions, int blockSize, int
             previousBlockHash = blockchain.back().getBlockHash();
         newBlock = parallelMining(previousBlockHash, difficulty, buffer, transactions, blockSize, users);
         blockchain.push_back(newBlock);
-
-        std::cout << "New block mined!" << std::endl;
 
         std::cout << "Block #" << blockchain.size() << std::endl;
         buffer << "Block #" << blockchain.size() << std::endl;
