@@ -7,7 +7,7 @@ class Block
 private:
     std::string previousBlockHash;
     time_t timestamp;
-    int version;
+    std::string version;
     std::string merkleRootHash;
     size_t nonce;
     int difficulty;

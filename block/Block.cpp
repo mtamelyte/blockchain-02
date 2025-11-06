@@ -4,7 +4,7 @@
 Block::Block(std::string previousBlockHash, std::string merkleRootHash, size_t nonce, int difficulty)
 {
     this->previousBlockHash = previousBlockHash;
-    this->version = 1;
+    this->version = "v0.21";
     this->merkleRootHash = merkleRootHash;
     this->difficulty = difficulty;
     this->nonce = nonce;
@@ -20,7 +20,7 @@ std::string Block::calculateBlockHash()
 {
     if (blockHash != "")
         return blockHash;
-    std::string stringToHash = previousBlockHash + std::to_string(timestamp) + std::to_string(version) + merkleRootHash + std::to_string(nonce) + std::to_string(difficulty);
+    std::string stringToHash = previousBlockHash + std::to_string(timestamp) + version + merkleRootHash + std::to_string(nonce) + std::to_string(difficulty);
     blockHash = hash(stringToHash);
     return blockHash;
 }
