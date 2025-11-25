@@ -1,14 +1,30 @@
-main:
-	g++ -c -fopenmp main.cpp src/function.cpp src/hash.cpp user/User.cpp transaction/Transaction.cpp block/Block.cpp merkleTree/MerkleTree.cpp src/mining.cpp src/libbitcoinMerkle.cpp
-	g++ -O3 -o main main.o function.o hash.o User.o Transaction.o Block.o MerkleTree.o mining.o libbitcoinMerkle.o -fopenmp -lbitcoin -lboost_system -lboost_filesystem -lboost_program_options \
+CXX = g++
+CXXFLAGS = -std=c++11 -Wall -g
+INCLUDES = -I/usr/local/boost-1.65/include -I/usr/local/include -Iinclude
+LDFLAGS = -L/usr/local/boost-1.65/lib -L/usr/local/lib -Wl,-rpath,/usr/local/boost-1.65/lib
+LIBS = -lbitcoin -lboost_system -lboost_filesystem -lboost_program_options \
        -lboost_thread -lboost_regex -lboost_log -lboost_log_setup \
-       -lboost_chrono -lboost_date_time -lpthread
-	   -I/usr/local/include -I/usr/local/boost-1.65/include
-	   -L/usr/local/lib -L/usr/local/boost-1.65/lib
-	./main
+       -lboost_chrono -lboost_date_time -lpthread -fopenmp
 
-run:
-	./main
+TARGET = main
+
+SOURCES = main.cpp block/Block.cpp src/function.cpp src/hash.cpp src/libbitcoinMerkle.cpp src/mining.cpp transaction/Transaction.cpp user/User.cpp
+OBJECTS = $(SOURCES:.cpp=.o)
+
+all: $(TARGET)
+
+$(TARGET): $(OBJECTS)
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
+
+%.o: %.cpp
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
 
 clean:
-	del *.o *.exe
+	rm -f $(OBJECTS) $(TARGET)
+
+rebuild: clean all
+
+run: $(TARGET)
+	./$(TARGET)
+
+.PHONY: all clean rebuild run

@@ -105,9 +105,28 @@ void removeTransactionsFromList(std::vector<Transaction> &transactionsInBlock, s
     }
 }
 
+bc::hash_digest txToHash(std::string tx)
+{
+    bc::hash_digest hash;
+    bc::decode_hash(hash, tx);
+    return hash;
+}
+
+bc::hash_list txHashes(std::vector<Transaction> &transactions)
+{
+    bc::hash_list hashes;
+
+    for (auto tx : transactions)
+    {
+        hashes.push_back(txToHash(tx.getTransactionId()));
+    }
+
+    return hashes;
+}
+
 Block mineBlock(std::vector<std::vector<Transaction>> candidateBlocks, int maxAttempts, std::string &previousBlockHash, int difficulty, std::vector<User> &users, std::vector<Transaction> &transactions, std::stringstream &buffer)
 {
-    std::atomic<bool> isFound = false;
+    std::atomic<bool> isFound{false};
     Block minedBlock;
 
     std::string diff = "";
@@ -124,13 +143,15 @@ Block mineBlock(std::vector<std::vector<Transaction>> candidateBlocks, int maxAt
         int nonce = threadId;
         int attemptCount = 0;
 
+        bc::hash_list hashList = txHashes(txToBlock);
+
         while (!isFound)
         {
             attemptCount++;
             if (attemptCount > maxAttempts)
                 break;
 
-            Block newBlock(previousBlockHash, MerkleTree(txToBlock).getRoot(), nonce += 5, difficulty);
+            Block newBlock(previousBlockHash, create_merkle(hashList), nonce += 5, difficulty);
             std::string hash = newBlock.calculateBlockHash();
 
             if (hash.substr(0, difficulty) == diff)

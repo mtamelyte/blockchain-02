@@ -34,12 +34,6 @@ bc::hash_digest create_merkle(bc::hash_list &merkle)
         }
         // This is the new list.
         merkle = new_merkle;
-        // DEBUG output -------------------------------------
-        std::cout << "Current merkle hash list:" << std::endl;
-        for (const auto &hash : merkle)
-            std::cout << " " << bc::encode_base16(hash) << std::endl;
-        std::cout << std::endl;
-        // --------------------------------------------------
     }
     // Finally we end up with a single item.
     return merkle[0];

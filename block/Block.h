@@ -8,7 +8,7 @@ private:
     std::string previousBlockHash;
     time_t timestamp;
     std::string version;
-    std::string merkleRootHash;
+    bc::hash_digest merkleRootHash;
     size_t nonce;
     int difficulty;
 
@@ -17,7 +17,7 @@ private:
     std::string blockHash = "";
 
 public:
-    Block(std::string previousBlockHash, std::string merkleRootHash, size_t nonce, int difficulty);
+    Block(std::string previousBlockHash, bc::hash_digest merkleRootHash, size_t nonce, int difficulty);
     Block() = default;
 
     std::string getBlockHash();
