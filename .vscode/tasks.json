@@ -1,0 +1,33 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build",
+            "type": "shell",
+            "command": "g++",
+            "args": [
+                "-std=c++11",
+                "${file}",
+                "-o",
+                "${fileDirname}/${fileBasenameNoExtension}",
+                "-I/usr/local/boost-1.65/include",
+                "-L/usr/local/boost-1.65/lib",
+                "-lbitcoin",
+                "-lboost_system",
+                "-lboost_filesystem",
+                "-lboost_program_options",
+                "-lboost_thread",
+                "-lboost_regex",
+                "-lboost_log",
+                "-lboost_log_setup",
+                "-lboost_chrono",
+                "-lboost_date_time",
+                "-lpthread"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        }
+    ]
+}
